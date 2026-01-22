@@ -3,133 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gait Dashboard | Mobile</title>
+    <title>Gait Dashboard | Mobile Touch</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        /* RESET */
+        /* RESET & BASE */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            /* Fix untuk iOS Safari Landscape bar issue */
-            height: 100dvh; 
-            background: #111827; 
-            overflow: hidden; 
+            margin: 0; display: flex; height: 100vh; height: 100dvh; 
+            background: #111827; overflow: hidden; 
         }
 
-        /* --- COMPACT SIDEBAR (240px Fixed) --- */
+        /* SIDEBAR (Fixed Width) */
         #sidebar { 
-            width: 240px; 
-            min-width: 240px;
-            background: #0f172a; 
-            border-right: 1px solid #1e293b;
-            display: flex; 
-            flex-direction: column; 
-            padding: 10px; 
-            overflow-y: auto;
-            z-index: 20;
+            width: 240px; min-width: 240px; background: #0f172a; 
+            border-right: 1px solid #1e293b; display: flex; flex-direction: column; 
+            padding: 12px; overflow-y: auto; z-index: 20;
         }
 
         h2 { 
-            text-align: left; 
-            margin: 0; 
-            color: #f8fafc; 
-            font-size: 1rem; 
-            font-weight: 800;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #334155;
-            margin-bottom: 10px;
+            text-align: left; margin: 0 0 15px 0; color: #f8fafc; 
+            font-size: 0.9rem; font-weight: 800; line-height: 1.4; letter-spacing: 0.5px;
+            padding-bottom: 10px; border-bottom: 1px solid #334155; text-transform: uppercase;
         }
 
-        /* --- CONTROLS COMPACT --- */
+        /* CONTROLS */
         .group-box { 
-            background: #1e293b; 
-            border-radius: 6px; 
-            padding: 8px; 
-            margin-bottom: 10px; 
+            background: #1e293b; border-radius: 6px; padding: 10px; margin-bottom: 12px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-
         .group-title { 
-            font-weight: 700; 
-            color: #60a5fa; 
-            margin-bottom: 5px; 
-            font-size: 0.65rem; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
+            font-weight: 700; color: #60a5fa; margin-bottom: 8px; 
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;
         }
 
-        /* Compact Inputs */
         select { 
-            width: 100%; 
-            padding: 6px; /* Lebih tipis */
-            background: #0f172a; 
-            color: #e2e8f0; 
-            border: 1px solid #334155; 
-            border-radius: 4px; 
-            font-size: 0.75rem; /* Font kecil */
-            outline: none;
+            width: 100%; padding: 8px; background: #0f172a; color: #e2e8f0; 
+            border: 1px solid #334155; border-radius: 4px; font-size: 0.75rem; outline: none;
         }
+        label { font-size: 0.65rem; color: #94a3b8; margin-top: 10px; margin-bottom: 4px; display: block; }
 
-        label { 
-            font-size: 0.65rem; 
-            color: #94a3b8; 
-            margin-top: 8px; 
-            margin-bottom: 2px;
+        .btn-reset {
+            width: 100%; background: #334155; color: white; border: 1px solid #475569;
+            padding: 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;
+            cursor: pointer; margin-top: 10px; transition: background 0.2s;
         }
+        .btn-reset:active { background: #475569; transform: translateY(1px); }
 
-        button { display: none; } /* Hide manual upload di mobile biar bersih */
-
-        /* --- STATUS GRID (Tiny) --- */
-        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 5px; }
+        /* STATUS */
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
         .status-item { 
-            font-size: 0.6rem; 
-            padding: 4px; 
-            border-radius: 3px; 
-            background: #0f172a;
-            border: 1px solid #334155; 
-            text-align: center; 
-            color: #64748b;
+            font-size: 0.6rem; padding: 5px; border-radius: 3px; 
+            background: #0f172a; border: 1px solid #334155; text-align: center; color: #64748b;
         }
         .status-ok { color: #34d399; border-color: #065f46; background: #064e3b; }
 
-        /* --- METRICS (Tiny Terminal) --- */
+        /* METRICS */
         #stats-box { 
-            background: #000; 
-            border: 1px solid #334155; 
-            border-radius: 4px;
-            padding: 8px; 
-            font-family: 'Menlo', monospace; 
-            font-size: 0.65rem; 
-            line-height: 1.2;
-            color: #34d399; 
-            white-space: pre; 
-            overflow-y: auto; 
-            flex-grow: 1; 
-            max-height: 100px; /* Batasi tinggi stats */
+            background: #000; border: 1px solid #334155; border-radius: 4px;
+            padding: 8px; font-family: 'Menlo', monospace; font-size: 0.65rem; 
+            line-height: 1.3; color: #34d399; white-space: pre; overflow-y: auto; flex-grow: 1; max-height: 150px;
         }
 
-        /* --- MAIN CONTENT (Full Space) --- */
-        #main-content { 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-            background: white; 
-            position: relative; 
-            /* No padding, full blast */
-        }
-
+        /* PLOT AREA */
+        #main-content { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; }
         #plot-area { flex-grow: 1; width: 100%; height: 100%; }
-
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <h2>GAIT PRO</h2>
+    <h2>LOWER LIMB<br>EXOSKELETON<br>GAIT</h2>
     
     <div class="group-box">
         <div class="group-title">Status</div>
@@ -154,6 +99,8 @@
         
         <label id="sub-label">Param</label>
         <select id="sub-select" onchange="drawPlot()"></select>
+
+        <button class="btn-reset" onclick="resetZoom()">↺ Reset View / Fit</button>
     </div>
 
     <div class="group-box" style="flex-grow: 1; display: flex; flex-direction: column; margin-bottom: 0;">
@@ -169,7 +116,6 @@
 <script>
     let datasets = { Normal_Python: null, Normal_Kinovea: null, Exo_Python: null, Exo_Kinovea: null };
     const COLORS = { norm: '#10b981', exo: '#ef4444', sensor: '#2563eb', cam: '#f59e0b' };
-
     const AUTO_FILES = [
         { url: "FINAL_DATA_JALAN_NORMAL_Python.csv", key: "Normal_Python", label: "status-Normal_Py" },
         { url: "FINAL_DATA_JALAN_NORMAL_Kinovea.csv", key: "Normal_Kinovea", label: "status-Normal_Kin" },
@@ -178,6 +124,11 @@
     ];
 
     window.onload = function() { loadDefaultFiles(); };
+    window.addEventListener('resize', function() { Plotly.Plots.resize(document.getElementById('plot-area')); });
+
+    function resetZoom() {
+        Plotly.relayout('plot-area', { 'xaxis.autorange': true, 'yaxis.autorange': true });
+    }
 
     function loadDefaultFiles() {
         let loadedCount = 0;
@@ -236,7 +187,6 @@
                     let vals = d.map(r => r[kneeCol]);
                     let max = Math.max(...vals).toFixed(0);
                     let min = Math.min(...vals).toFixed(0);
-                    // Short format for mobile
                     out += `${k.replace('Normal_','N_').replace('Exo_','E_').replace('Python','Py').replace('Kinovea','Cam')}: ${min}/${max}°\n`;
                 }
             }
@@ -249,24 +199,26 @@
         const sub = document.getElementById('sub-select').value;
         let dataPlot = [];
         
-        // --- MOBILE OPTIMIZED LAYOUT ---
         let layout = { 
-            margin: { t: 30, b: 30, l: 40, r: 40 }, // Margin tipis
+            margin: { t: 30, b: 30, l: 40, r: 40 },
             showlegend: true, 
-            // Legend di dalam plot biar ga makan tempat vertikal
-            legend: { x: 0, y: 1, xanchor: 'left', yanchor: 'bottom', orientation: 'h', bgcolor: 'rgba(255,255,255,0.5)' },
-            xaxis: { title: '', showgrid: true, gridcolor: '#f0f0f0' }, // Title X dihilangkan biar hemat tempat
-            yaxis: { showgrid: true, gridcolor: '#f0f0f0' },
+            legend: { x: 0, y: 1, xanchor: 'left', yanchor: 'bottom', orientation: 'h', bgcolor: 'rgba(255,255,255,0.7)' },
+            xaxis: { title: '', showgrid: true, gridcolor: '#f0f0f0', automargin: true },
+            yaxis: { showgrid: true, gridcolor: '#f0f0f0', automargin: true },
             hovermode: 'closest',
-            font: { family: '-apple-system', size: 10 } // Font kecil
+            font: { family: '-apple-system', size: 10 },
+            
+            // --- SETTING KUNCI UNTUK TOUCHSCREEN ---
+            dragmode: 'pan' // Ini kuncinya! 1 Jari = Geser, 2 Jari = Zoom
         };
         
         let config = { 
-            scrollZoom: true, 
-            responsive: true, 
-            displayModeBar: false // Hilangkan toolbar plotly biar bersih di HP
+            scrollZoom: true, // Ini mengaktifkan pinch-to-zoom
+            responsive: true,
+            displayModeBar: false 
         };
 
+        // ... (LOGIKA PLOT DATA SAMA SEPERTI SEBELUMNYA) ...
         if(mode == "0" && datasets.Exo_Python) {
             let d = datasets.Exo_Python;
             dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_Force_kg), name: 'Force', line: {color: COLORS.norm, width: 2} });
