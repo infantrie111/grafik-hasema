@@ -231,7 +231,7 @@
             sub.innerHTML = '';
             if (mode == "0") addOptions(sub, ["Actuator Sync"]);
             else if (mode == "1" || mode == "2") addOptions(sub, ["Sumbu Vertikal", "Join Angle"]);
-            else if (mode == "3") addOptions(sub, ["Phase Portrait"]);
+            else if (mode == "3") addOptions(sub, ["Normal Walking", "Exo Assisted"]);
             else if (mode == "5") addOptions(sub, ["Noise Check", "Histogram", "Force Drift"]);
             drawPlot();
         }
@@ -321,24 +321,26 @@
                 }
 
                 if (pyData) {
-                    dataPlot.push({ x: pyData.map(r => r.Time), y: pyData.map(r => r[column]), name: 'Python', line: { color: COLORS.sensor, width: 2 } });
+                    // Apply filtering / smoothing
+                    let yRaw = pyData.map(r => r[column]);
+                    let ySmooth = movingAverage(yRaw, 5); // Window 5 untuk menghaluskan jitter
+                    dataPlot.push({ x: pyData.map(r => r.Time), y: ySmooth, name: 'Python', line: { color: COLORS.sensor, width: 2 } });
                 }
                 if (kinData) {
                     // Cek kolom di kinovea
-                    // Untuk Join Angle (Lutut), biasanya 'Angle'. 
-                    // Untuk Hip, mungkin user punya kolom lain. Kita coba cari yang cocok atau default.
-                    // Fallback sederhana: gunakan L_Knee jika ada, atau Angle.
-                    // Jika Sumbu Vertikal diminta dan tidak ada data spesifik di Kinovea, mungkin plot kosong atau Angle?
-                    // Kita asumsikan struktur CSV Kinovea mengikuti standar sebelumnya: r.Angle atau r.L_Knee
                     let kinCol = (sub === "Join Angle") ? (kinData[0].hasOwnProperty('L_Knee') ? 'L_Knee' : 'Angle') : 'L_Hip_Vert';
 
                     // Pastikan kolom ada sebelum map
                     if (kinData[0] && (kinData[0][kinCol] !== undefined || (kinCol = 'Angle', kinData[0]['Angle'] !== undefined))) {
+                        // Apply filtering / smoothing
+                        let yRawKin = kinData.map(r => r[kinCol]);
+                        let ySmoothKin = movingAverage(yRawKin, 5); // Window 5 untuk menghaluskan jitter
+
                         dataPlot.push({
                             x: kinData.map(r => r.Time || (r.Frame ? r.Frame / 30 : null)), // Asumsi time sync atau frame
-                            y: kinData.map(r => r[kinCol]),
+                            y: ySmoothKin,
                             name: 'Kinovea',
-                            line: { color: COLORS.cam, dash: 'dash', width: 2 }
+                            line: { color: COLORS.cam, width: 2 } // Solid orange line (dash prop removed)
                         });
                     }
                 }
@@ -347,10 +349,46 @@
                 layout.yaxis.title = "Angle (deg)";
             }
             else if (mode == "3") {
-                let d = sub.includes("Normal") ? datasets.Normal_Python : datasets.Exo_Python;
+                let d = sub === "Normal Walking" ? datasets.Normal_Python : datasets.Exo_Python;
                 if (d) {
-                    dataPlot.push({ x: d.map(r => r.L_Knee), y: d.map(r => r.L_Hip_Joint), mode: 'lines', name: 'Cycle', line: { color: '#6366f1' } });
-                    layout.title = { text: "Cyclogram", font: { size: 14 }, y: 0.95 };
+                    // 1. Smooth the data to reduce "coret-coretan" (jitter)
+                    // Check columns (fallback if needed, but assuming standard Python structure)
+                    let xRaw = d.map(r => r.L_Knee);
+                    let yRaw = d.map(r => r.L_Hip_Joint !== undefined ? r.L_Hip_Joint : (r.L_Hip_Vert || 0));
+
+                    let xSmooth = movingAverage(xRaw, 10); // Higher smoothing for cleaner loops
+                    let ySmooth = movingAverage(yRaw, 10);
+
+                    // 2. Main Cycle Plot
+                    dataPlot.push({
+                        x: xSmooth,
+                        y: ySmooth,
+                        mode: 'lines',
+                        name: 'Cycle',
+                        line: { color: sub === "Normal Walking" ? COLORS.norm : COLORS.exo, width: 3 }
+                    });
+
+                    // 3. Start Point (Green Dot)
+                    if (xSmooth.length > 0) {
+                        dataPlot.push({
+                            x: [xSmooth[0]],
+                            y: [ySmooth[0]],
+                            mode: 'markers',
+                            name: 'Start',
+                            marker: { color: '#22c55e', size: 12, symbol: 'circle', line: { color: 'white', width: 1 } }
+                        });
+
+                        // 4. End Point (Red X)
+                        dataPlot.push({
+                            x: [xSmooth[xSmooth.length - 1]],
+                            y: [ySmooth[ySmooth.length - 1]],
+                            mode: 'markers',
+                            name: 'End',
+                            marker: { color: '#ef4444', size: 12, symbol: 'x', line: { color: 'white', width: 1 } }
+                        });
+                    }
+
+                    layout.title = { text: "Cyclogram: " + sub, font: { size: 14 }, y: 0.95 };
                     layout.xaxis.title = "Knee Angle (deg)";
                     layout.yaxis.title = "Hip Angle (deg)";
                 }
