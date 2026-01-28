@@ -365,7 +365,7 @@
                         y: ySmooth,
                         mode: 'lines',
                         name: 'Cycle',
-                        line: { color: sub === "Normal Walking" ? COLORS.norm : COLORS.exo, width: 3 }
+                        line: { color: sub === "Normal Walking" ? COLORS.norm : '#2563eb', width: 3 }
                     });
 
                     // 3. Start Point (Green Dot)
@@ -399,8 +399,8 @@
                 if (sub.includes("Noise")) {
                     let raw = d.map(r => r.L_Knee);
                     let filtered = movingAverage(raw, 8);
-                    dataPlot.push({ y: raw, name: 'Raw', line: { color: '#cbd5e1' } });
-                    dataPlot.push({ y: filtered, name: 'Filter', line: { color: '#8b5cf6' } });
+                    dataPlot.push({ y: raw, name: 'Raw', line: { color: '#64748b', width: 1 } }); // Darker grey for visibility
+                    dataPlot.push({ y: filtered, name: 'Filter', line: { color: '#8b5cf6', width: 2 } });
                     layout.title = "Noise Check";
                     layout.yaxis.title = "Angle (deg)";
                 }
