@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gait Dashboard | Mobile</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        /* RESET */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            /* Fix untuk iOS Safari Landscape bar issue */
+            height: 100dvh;
+            background: #111827;
+            overflow: hidden;
+        }
+
+        /* --- COMPACT SIDEBAR (240px Fixed) --- */
+        #sidebar {
+            width: 240px;
+            min-width: 240px;
+            background: #0f172a;
+            border-right: 1px solid #1e293b;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow-y: auto;
+            z-index: 20;
+        }
+
+        h2 {
+            text-align: left;
+            margin: 0;
+            color: #f8fafc;
+            font-size: 1rem;
+            font-weight: 800;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 10px;
+        }
+
+        /* --- CONTROLS COMPACT --- */
+        .group-box {
+            background: #1e293b;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+
+        .group-title {
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 5px;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Compact Inputs */
+        select {
+            width: 100%;
+            padding: 6px;
+            /* Lebih tipis */
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            /* Font kecil */
+            outline: none;
+        }
+
+        label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            margin-top: 8px;
+            margin-bottom: 2px;
+        }
+
+        button {
+            display: none;
+        }
+
+        /* Hide manual upload di mobile biar bersih */
+
+        /* --- STATUS GRID (Tiny) --- */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin-top: 5px;
+        }
+
+        .status-item {
+            font-size: 0.6rem;
+            padding: 4px;
+            border-radius: 3px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .status-ok {
+            color: #34d399;
+            border-color: #065f46;
+            background: #064e3b;
+        }
+
+        /* --- METRICS (Tiny Terminal) --- */
+        #stats-box {
+            background: #000;
+            border: 1px solid #334155;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: 'Menlo', monospace;
+            font-size: 0.65rem;
+            line-height: 1.2;
+            color: #34d399;
+            white-space: pre;
+            overflow-y: auto;
+            flex-grow: 1;
+            max-height: 100px;
+            /* Batasi tinggi stats */
+        }
+
+        /* --- MAIN CONTENT (Full Space) --- */
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            position: relative;
+            /* No padding, full blast */
+        }
+
+        #plot-area {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <h2>GAIT PRO</h2>
+
+        <div class="group-box">
+            <div class="group-title">Status</div>
+            <div class="status-grid">
+                <div id="status-Normal_Py" class="status-item">Norm(Py)</div>
+                <div id="status-Normal_Kin" class="status-item">Norm(Cam)</div>
+                <div id="status-Exo_Py" class="status-item">Exo(Py)</div>
+                <div id="status-Exo_Kin" class="status-item">Exo(Cam)</div>
+            </div>
+        </div>
+
+        <div class="group-box">
+            <div class="group-title">Control</div>
+            <label>Mode</label>
+            <select id="mode-select" onchange="updateSubMenu()">
+                <option value="0">Control (PWM vs Force)</option>
+                <option value="1">Bio: Normal (Py vs Kin)</option>
+                <option value="2">Bio: Exo (Py vs Kin)</option>
+                <option value="3">Cyclogram</option>
+                <option value="5">Signal Diagnostics</option>
+            </select>
+
+            <label id="sub-label">Param</label>
+            <select id="sub-select" onchange="drawPlot()"></select>
+        </div>
+
+        <div class="group-box" style="flex-grow: 1; display: flex; flex-direction: column; margin-bottom: 0;">
+            <div class="group-title">Metrics</div>
+            <div id="stats-box">Init...</div>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <div id="plot-area"></div>
+    </div>
+
+    <script>
+        let datasets = { Normal_Python: null, Normal_Kinovea: null, Exo_Python: null, Exo_Kinovea: null };
+        const COLORS = { norm: '#10b981', exo: '#ef4444', sensor: '#2563eb', cam: '#f59e0b' };
+
+        const AUTO_FILES = [
+            { url: "FINAL_DATA_JALAN_NORMAL_Python.csv", key: "Normal_Python", label: "status-Normal_Py" },
+            { url: "FINAL_DATA_JALAN_NORMAL_Kinovea.csv", key: "Normal_Kinovea", label: "status-Normal_Kin" },
+            { url: "FINAL_DATA_EXOSKELETON_Python.csv", key: "Exo_Python", label: "status-Exo_Py" },
+            { url: "FINAL_DATA_EXOSKELETON_kinovea.csv", key: "Exo_Kinovea", label: "status-Exo_Kin" }
+        ];
+
+        window.onload = function () { loadDefaultFiles(); };
+
+        function loadDefaultFiles() {
+            let loadedCount = 0;
+            AUTO_FILES.forEach(fileDef => {
+                let el = document.getElementById(fileDef.label);
+                Papa.parse(fileDef.url, {
+                    download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                    complete: function (results) {
+                        if (results.data && results.data.length > 0) {
+                            datasets[fileDef.key] = results.data;
+                            el.className = "status-item status-ok";
+                            loadedCount++;
+                            if (loadedCount === AUTO_FILES.length) { updateStats(); drawPlot(); } else { drawPlot(); }
+                        }
+                    },
+                    error: function () { el.innerText = "Err"; }
+                });
+            });
+            updateSubMenu();
+        }
+
+        function updateSubMenu() {
+            const mode = document.getElementById('mode-select').value;
+            const sub = document.getElementById('sub-select');
+            sub.innerHTML = '';
+            if (mode == "0") addOptions(sub, ["Actuator Sync"]);
+            else if (mode == "1" || mode == "2") addOptions(sub, ["Sumbu Vertikal", "Join Angle"]);
+            else if (mode == "3") addOptions(sub, ["Phase Portrait"]);
+            else if (mode == "5") addOptions(sub, ["Noise Check", "Histogram", "Force Drift"]);
+            drawPlot();
+        }
+
+        function addOptions(select, options) {
+            options.forEach(opt => { let el = document.createElement('option'); el.textContent = opt; el.value = opt; select.appendChild(el); });
+        }
+
+        function movingAverage(data, window) {
+            let result = [];
+            for (let i = 0; i < data.length; i++) {
+                let start = Math.max(0, i - Math.floor(window / 2));
+                let end = Math.min(data.length, i + Math.floor(window / 2));
+                let sub = data.slice(start, end);
+                result.push(sub.reduce((a, b) => a + b, 0) / sub.length);
+            }
+            return result;
+        }
+
+        function updateStats() {
+            let out = "";
+            Object.keys(datasets).forEach(k => {
+                if (datasets[k]) {
+                    let d = datasets[k];
+                    let kneeCol = d[0].hasOwnProperty('L_Knee') ? 'L_Knee' : (d[0].hasOwnProperty('Angle') ? 'Angle' : null);
+                    if (kneeCol) {
+                        let vals = d.map(r => r[kneeCol]);
+                        let max = Math.max(...vals).toFixed(0);
+                        let min = Math.min(...vals).toFixed(0);
+                        // Short format for mobile
+                        out += `${k.replace('Normal_', 'N_').replace('Exo_', 'E_').replace('Python', 'Py').replace('Kinovea', 'Cam')}: ${min}/${max}°\n`;
+                    }
+                }
+            });
+            document.getElementById('stats-box').innerText = out;
+        }
+
+        function drawPlot() {
+            const mode = document.getElementById('mode-select').value;
+            const sub = document.getElementById('sub-select').value;
+            let dataPlot = [];
+
+            // --- MOBILE OPTIMIZED LAYOUT ---
+            let layout = {
+                margin: { t: 30, b: 30, l: 40, r: 40 }, // Margin tipis
+                showlegend: true,
+                // Legend di dalam plot biar ga makan tempat vertikal
+                legend: { x: 0, y: 1, xanchor: 'left', yanchor: 'bottom', orientation: 'h', bgcolor: 'rgba(255,255,255,0.5)' },
+                xaxis: { title: '', showgrid: true, gridcolor: '#f0f0f0' }, // Title X dihilangkan biar hemat tempat
+                yaxis: { showgrid: true, gridcolor: '#f0f0f0' },
+                hovermode: 'closest',
+                font: { family: '-apple-system', size: 10 } // Font kecil
+            };
+
+            let config = {
+                scrollZoom: true,
+                responsive: true,
+                displayModeBar: false // Hilangkan toolbar plotly biar bersih di HP
+            };
+
+            if (mode == "0" && datasets.Exo_Python) {
+                let d = datasets.Exo_Python;
+                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_Force_kg), name: 'Force', line: { color: COLORS.norm, width: 2 } });
+                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_PWM), name: 'PWM', yaxis: 'y2', line: { color: COLORS.sensor, dash: 'dot', width: 1.5 } });
+                layout.yaxis2 = { overlaying: 'y', side: 'right', range: [0, 260], showgrid: false, title: 'PWM' };
+                layout.yaxis.title = "Force (kg)";
+                layout.title = { text: "Force vs PWM", font: { size: 14 }, y: 0.95 };
+            }
+            else if (mode == "1" || mode == "2") {
+                let column = sub === "Join Angle" ? "L_Knee" : "L_Hip_Vert";
+                // Normal (Mode 1) or Exo (Mode 2)
+                let pyData = (mode == "1") ? datasets.Normal_Python : datasets.Exo_Python;
+                let kinData = (mode == "1") ? datasets.Normal_Kinovea : datasets.Exo_Kinovea;
+
+                // Note: Kinovea biasanya hanya punya satu kolom Angle utama, kita asumsikan mappingnya:
+                // Jika Join Angle -> Angle (lutut). Jika Sumbu Vertikal -> mungkin tidak ada di Kinovea standar,
+                // tapi kita coba plot jika ada kolom yang sesuai atau fallback ke Angle (hati-hati).
+                // Untuk saat ini kita pakai logika lama: r.L_Knee || r.Angle
+
+                let title = "";
+                if (sub === "Sumbu Vertikal") {
+                    // Description for Vertical Axis
+                    title = "Sumbu Vertikal (Orientasi Paha relatif Gravitasi)";
+                } else {
+                    // Description for Join Angle
+                    title = "Join Angle (Fleksi/Ekstensi Lutut)";
+                }
+
+                if (pyData) {
+                    dataPlot.push({ x: pyData.map(r => r.Time), y: pyData.map(r => r[column]), name: 'Python', line: { color: COLORS.sensor, width: 2 } });
+                }
+                if (kinData) {
+                    // Cek kolom di kinovea
+                    // Untuk Join Angle (Lutut), biasanya 'Angle'. 
+                    // Untuk Hip, mungkin user punya kolom lain. Kita coba cari yang cocok atau default.
+                    // Fallback sederhana: gunakan L_Knee jika ada, atau Angle.
+                    // Jika Sumbu Vertikal diminta dan tidak ada data spesifik di Kinovea, mungkin plot kosong atau Angle?
+                    // Kita asumsikan struktur CSV Kinovea mengikuti standar sebelumnya: r.Angle atau r.L_Knee
+                    let kinCol = (sub === "Join Angle") ? (kinData[0].hasOwnProperty('L_Knee') ? 'L_Knee' : 'Angle') : 'L_Hip_Vert';
+
+                    // Pastikan kolom ada sebelum map
+                    if (kinData[0] && (kinData[0][kinCol] !== undefined || (kinCol = 'Angle', kinData[0]['Angle'] !== undefined))) {
+                        dataPlot.push({
+                            x: kinData.map(r => r.Time || (r.Frame ? r.Frame / 30 : null)), // Asumsi time sync atau frame
+                            y: kinData.map(r => r[kinCol]),
+                            name: 'Kinovea',
+                            line: { color: COLORS.cam, dash: 'dash', width: 2 }
+                        });
+                    }
+                }
+                layout.title = { text: title, font: { size: 12 }, y: 0.98 };
+                layout.xaxis.title = "Time (s)";
+                layout.yaxis.title = "Angle (deg)";
+            }
+            else if (mode == "3") {
+                let d = sub.includes("Normal") ? datasets.Normal_Python : datasets.Exo_Python;
+                if (d) {
+                    dataPlot.push({ x: d.map(r => r.L_Knee), y: d.map(r => r.L_Hip_Joint), mode: 'lines', name: 'Cycle', line: { color: '#6366f1' } });
+                    layout.title = { text: "Cyclogram", font: { size: 14 }, y: 0.95 };
+                    layout.xaxis.title = "Knee Angle (deg)";
+                    layout.yaxis.title = "Hip Angle (deg)";
+                }
+            }
+            else if (mode == "5") {
+                let d = datasets.Exo_Python || datasets.Normal_Python;
+                if (!d) return;
+                if (sub.includes("Noise")) {
+                    let raw = d.map(r => r.L_Knee);
+                    let filtered = movingAverage(raw, 8);
+                    dataPlot.push({ y: raw, name: 'Raw', line: { color: '#cbd5e1' } });
+                    dataPlot.push({ y: filtered, name: 'Filter', line: { color: '#8b5cf6' } });
+                    layout.title = "Noise Check";
+                    layout.yaxis.title = "Angle (deg)";
+                }
+                else if (sub.includes("Histogram")) {
+                    dataPlot.push({ x: d.map(r => r.L_Knee), type: 'histogram', name: 'Dist.' });
+                    layout.title = "Dist.";
+                    layout.xaxis.title = "Angle (deg)";
+                    layout.yaxis.title = "Count";
+                }
+                else if (sub.includes("Drift")) {
+                    let force = d.map(r => r.L_Force_kg);
+                    dataPlot.push({ y: force, name: 'Force', fill: 'tozeroy' });
+                    layout.title = "Drift";
+                    layout.yaxis.title = "Force (kg)";
+                }
+            }
+            Plotly.newPlot('plot-area', dataPlot, layout, config);
+        }
+    </script>
+</body>
+
+</html>
