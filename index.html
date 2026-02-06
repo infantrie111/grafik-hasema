@@ -275,121 +275,132 @@
             const sub = document.getElementById('sub-select').value;
             let dataPlot = [];
 
-            // --- MOBILE OPTIMIZED LAYOUT ---
+            // --- STYLE SETTINGS FOR PPT/REPORT ---
+            const fontBase = { family: '-apple-system, Arial', size: 14, color: '#000' };
+            const fontTitle = { family: '-apple-system, Arial', size: 18, color: '#000', weight: 'bold' };
+            const fontAxis = { family: '-apple-system, Arial', size: 16, weight: 'bold', color: '#000' };
+
             let layout = {
-                margin: { t: 40, b: 60, l: 65, r: 50 }, // Margin diperlebar agar label tidak terpotong
+                margin: { t: 50, b: 80, l: 80, r: 50 },
                 showlegend: true,
-                // Legend di dalam plot biar ga makan tempat vertikal
-                legend: { x: 0, y: 1, xanchor: 'left', yanchor: 'bottom', orientation: 'h', bgcolor: 'rgba(255,255,255,0.5)' },
-                xaxis: { title: '', showgrid: true, gridcolor: '#f0f0f0' }, // Title X dihilangkan biar hemat tempat
-                yaxis: { showgrid: true, gridcolor: '#f0f0f0' },
+                dragmode: 'pan', // <-- ENABLE PAN BY DEFAULT FOR CLICK & DRAG
+                legend: {
+                    x: 0.02, y: 0.98,
+                    xanchor: 'left', yanchor: 'top',
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#000',
+                    borderwidth: 1,
+                    font: { size: 14, color: '#000' }
+                },
+                xaxis: {
+                    showgrid: true, gridcolor: '#e0e0e0',
+                    showline: true, linewidth: 3, linecolor: '#000', mirror: true,
+                    tickfont: { size: 14, weight: 'bold', color: '#000' },
+                    titlefont: fontAxis
+                },
+                yaxis: {
+                    showgrid: true, gridcolor: '#e0e0e0',
+                    showline: true, linewidth: 3, linecolor: '#000', mirror: true,
+                    tickfont: { size: 14, weight: 'bold', color: '#000' },
+                    titlefont: fontAxis
+                },
                 hovermode: 'closest',
-                font: { family: '-apple-system', size: 10 } // Font kecil
+                title: { font: fontTitle },
+                font: fontBase,
+                paper_bgcolor: '#fff',
+                plot_bgcolor: '#fff'
             };
 
             let config = {
-                scrollZoom: true,
+                scrollZoom: true, // Enable Zoom via Scroll/Trackpad
                 responsive: true,
-                displayModeBar: false // Hilangkan toolbar plotly biar bersih di HP
+                displayModeBar: true,
+                displaylogo: false
             };
 
             if (mode == "0" && datasets.Exo_Python) {
                 let d = datasets.Exo_Python;
-                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_Force_kg), name: 'Force', line: { color: COLORS.norm, width: 2 } });
-                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_PWM), name: 'PWM', yaxis: 'y2', line: { color: COLORS.sensor, dash: 'dot', width: 1.5 } });
-                layout.yaxis2 = { overlaying: 'y', side: 'right', range: [0, 260], showgrid: false, title: 'PWM' };
+                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_Force_kg), name: 'Force', line: { color: COLORS.norm, width: 3 } });
+                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_PWM), name: 'PWM', yaxis: 'y2', line: { color: COLORS.sensor, dash: 'dot', width: 2.5 } });
+
+                layout.yaxis2 = {
+                    overlaying: 'y', side: 'right', range: [0, 260],
+                    showgrid: false, title: 'PWM',
+                    showline: true, linewidth: 3, linecolor: COLORS.sensor,
+                    tickfont: { size: 14, weight: 'bold', color: COLORS.sensor },
+                    titlefont: { size: 16, color: COLORS.sensor }
+                };
                 layout.yaxis.title = "Force (kg)";
-                layout.title = { text: "Force vs PWM", font: { size: 14 }, y: 0.95 };
+                layout.title = { text: "Force vs PWM", y: 0.95 };
             }
             else if (mode == "1" || mode == "2") {
                 let column = sub === "Join Angle" ? "L_Knee" : "L_Hip_Vert";
-                // Normal (Mode 1) or Exo (Mode 2)
                 let pyData = (mode == "1") ? datasets.Normal_Python : datasets.Exo_Python;
                 let kinData = (mode == "1") ? datasets.Normal_Kinovea : datasets.Exo_Kinovea;
 
-                // Note: Kinovea biasanya hanya punya satu kolom Angle utama, kita asumsikan mappingnya:
-                // Jika Join Angle -> Angle (lutut). Jika Sumbu Vertikal -> mungkin tidak ada di Kinovea standar,
-                // tapi kita coba plot jika ada kolom yang sesuai atau fallback ke Angle (hati-hati).
-                // Untuk saat ini kita pakai logika lama: r.L_Knee || r.Angle
-
                 let title = "";
-                if (sub === "Sumbu Vertikal") {
-                    // Description for Vertical Axis
-                    title = "Sumbu Vertikal (Orientasi Paha relatif Gravitasi)";
-                } else {
-                    // Description for Join Angle
-                    title = "Join Angle (Fleksi/Ekstensi Lutut)";
-                }
+                if (sub === "Sumbu Vertikal") title = "Sumbu Vertikal (Orientasi Paha relatif Gravitasi)";
+                else title = "Join Angle (Fleksi/Ekstensi Lutut)";
 
                 if (pyData) {
-                    // Apply filtering / smoothing
                     let yRaw = pyData.map(r => r[column]);
-                    let ySmooth = movingAverage(yRaw, 5); // Window 5 untuk menghaluskan jitter
-                    dataPlot.push({ x: pyData.map(r => r.Time), y: ySmooth, name: 'Python', line: { color: COLORS.sensor, width: 2 } });
+                    let ySmooth = movingAverage(yRaw, 5);
+                    dataPlot.push({ x: pyData.map(r => r.Time), y: ySmooth, name: 'Python Sensor', line: { color: COLORS.sensor, width: 3 } });
                 }
                 if (kinData) {
-                    // Cek kolom di kinovea
                     let kinCol = (sub === "Join Angle") ? (kinData[0].hasOwnProperty('L_Knee') ? 'L_Knee' : 'Angle') : 'L_Hip_Vert';
-
-                    // Pastikan kolom ada sebelum map
                     if (kinData[0] && (kinData[0][kinCol] !== undefined || (kinCol = 'Angle', kinData[0]['Angle'] !== undefined))) {
-                        // Apply filtering / smoothing
                         let yRawKin = kinData.map(r => r[kinCol]);
-                        let ySmoothKin = movingAverage(yRawKin, 5); // Window 5 untuk menghaluskan jitter
-
+                        let ySmoothKin = movingAverage(yRawKin, 5);
                         dataPlot.push({
-                            x: kinData.map(r => r.Time || (r.Frame ? r.Frame / 30 : null)), // Asumsi time sync atau frame
+                            x: kinData.map(r => r.Time || (r.Frame ? r.Frame / 30 : null)),
                             y: ySmoothKin,
-                            name: 'Kinovea',
-                            line: { color: COLORS.cam, width: 2 } // Solid orange line (dash prop removed)
+                            name: 'Kinovea (Cam)',
+                            line: { color: COLORS.cam, width: 3 }
                         });
                     }
                 }
-                layout.title = { text: title, font: { size: 12 }, y: 0.98 };
+                layout.title = { text: title, y: 0.98 };
                 layout.xaxis.title = "Time (s)";
                 layout.yaxis.title = "Angle (deg)";
             }
             else if (mode == "3") {
                 let d = sub === "Normal Walking" ? datasets.Normal_Python : datasets.Exo_Python;
                 if (d) {
-                    // 1. Smooth the data to reduce "coret-coretan" (jitter)
-                    // Check columns (fallback if needed, but assuming standard Python structure)
                     let xRaw = d.map(r => r.L_Knee);
                     let yRaw = d.map(r => r.L_Hip_Joint !== undefined ? r.L_Hip_Joint : (r.L_Hip_Vert || 0));
 
-                    let xSmooth = movingAverage(xRaw, 10); // Higher smoothing for cleaner loops
+                    let xSmooth = movingAverage(xRaw, 10);
                     let ySmooth = movingAverage(yRaw, 10);
 
-                    // 2. Main Cycle Plot
                     dataPlot.push({
                         x: xSmooth,
                         y: ySmooth,
                         mode: 'lines',
                         name: 'Cycle',
-                        line: { color: sub === "Normal Walking" ? COLORS.norm : '#2563eb', width: 3 }
+                        line: { color: sub === "Normal Walking" ? COLORS.norm : '#2563eb', width: 4 }
                     });
 
-                    // 3. Start Point (Green Dot)
                     if (xSmooth.length > 0) {
                         dataPlot.push({
                             x: [xSmooth[0]],
                             y: [ySmooth[0]],
                             mode: 'markers',
                             name: 'Start',
-                            marker: { color: '#22c55e', size: 12, symbol: 'circle', line: { color: 'white', width: 1 } }
+                            // --- WARNA KUNING UNTUK START ---
+                            marker: { color: '#FFFF00', size: 16, symbol: 'circle', line: { color: 'black', width: 2 } }
                         });
 
-                        // 4. End Point (Red X)
                         dataPlot.push({
                             x: [xSmooth[xSmooth.length - 1]],
                             y: [ySmooth[ySmooth.length - 1]],
                             mode: 'markers',
                             name: 'End',
-                            marker: { color: '#ef4444', size: 12, symbol: 'x', line: { color: 'white', width: 1 } }
+                            marker: { color: '#ef4444', size: 16, symbol: 'x', line: { color: 'black', width: 2 } }
                         });
                     }
 
-                    layout.title = { text: "Cyclogram: " + sub, font: { size: 14 }, y: 0.95 };
+                    layout.title = { text: "Cyclogram: " + sub, y: 0.95 };
                     layout.xaxis.title = "Knee Angle (deg)";
                     layout.yaxis.title = "Hip Angle (deg)";
                 }
@@ -397,10 +408,15 @@
             else if (mode == "5") {
                 let d = datasets.Exo_Python || datasets.Normal_Python;
                 if (!d) return;
+
+                // Common overrides for diagnostics
+                layout.xaxis.showline = true;
+                layout.yaxis.showline = true;
+
                 if (sub.includes("Noise")) {
                     let raw = d.map(r => r.L_Knee);
                     let filtered = movingAverage(raw, 8);
-                    dataPlot.push({ y: raw, name: 'Raw', line: { color: '#64748b', width: 1 } }); // Darker grey for visibility
+                    dataPlot.push({ y: raw, name: 'Raw', line: { color: '#64748b', width: 1 } });
                     dataPlot.push({ y: filtered, name: 'Filter', line: { color: '#8b5cf6', width: 2 } });
                     layout.title = "Noise Check";
                     layout.yaxis.title = "Angle (deg)";
