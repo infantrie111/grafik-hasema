@@ -281,8 +281,9 @@
             const fontAxis = { family: '-apple-system, Arial', size: 16, weight: 'bold', color: '#000' };
 
             let layout = {
-                // INCREASED TOP MARGIN TO 120 TO PREVENT TITLE OVERLAP (CYCLOGRAM INCLUDED)
-                margin: { t: 120, b: 80, l: 80, r: 50 },
+                // REDUCED MARGINS TO MAXIMIZE GRAPH BOX SIZE
+                // Top=100 (Title), Bottom=60 (X-Axis), Left=70 (Y-Axis), Right=30 (Minimal)
+                margin: { t: 100, b: 60, l: 70, r: 30 },
                 showlegend: true,
                 dragmode: 'pan', // Enable Click-and-Drag Pan
                 legend: {
@@ -298,12 +299,14 @@
                     showline: true, linewidth: 3, linecolor: '#000', mirror: true,
                     tickfont: { size: 14, weight: 'bold', color: '#000' },
                     titlefont: fontAxis
+                    // dtick will be set dynamically below
                 },
                 yaxis: {
                     showgrid: true, gridcolor: '#e0e0e0',
                     showline: true, linewidth: 3, linecolor: '#000', mirror: true,
                     tickfont: { size: 14, weight: 'bold', color: '#000' },
                     titlefont: fontAxis
+                    // dtick will be set dynamically below
                 },
                 hovermode: 'closest',
                 title: { font: fontTitle },
@@ -316,19 +319,21 @@
                 scrollZoom: true,
                 responsive: true,
                 displayModeBar: true,
-                displaylogo: false
+                displaylogo: false,
+                editable: true // ALLOWS MOVING LEGENDA & TITLE MANUALLY
             };
 
             if (mode == "0" && datasets.Exo_Python) {
                 let d = datasets.Exo_Python;
                 dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_Force_kg), name: 'Force', line: { color: COLORS.norm, width: 3 } });
-
-                // --- SINGLE AXIS: REMOVED SECONDARY AXIS CONFIG ---
                 dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_PWM), name: 'PWM', line: { color: COLORS.sensor, dash: 'dot', width: 2.5 } });
 
                 layout.yaxis.title = "Force (kg) & PWM";
                 layout.title = { text: "Force vs PWM" };
-                // Removed y-offset for title as margin handles it
+
+                // Set Ticks for Force/PWM (Larger range, so dtick=20 is appropriate)
+                layout.yaxis.dtick = 20;
+                // Time axis: auto
             }
             else if (mode == "1" || mode == "2") {
                 let column = sub === "Join Angle" ? "L_Knee" : "L_Hip_Vert";
@@ -336,19 +341,21 @@
                 let kinData = (mode == "1") ? datasets.Normal_Kinovea : datasets.Exo_Kinovea;
 
                 let title = "";
-                if (sub === "Sumbu Vertikal") title = "Sumbu Vertikal<br>(Orientasi Paha relatif Gravitasi)"; // Add BR for safety
+                if (sub === "Sumbu Vertikal") title = "Sumbu Vertikal<br>(Orientasi Paha relatif Gravitasi)";
                 else title = "Join Angle (Fleksi/Ekstensi Lutut)";
 
                 if (pyData) {
                     let yRaw = pyData.map(r => r[column]);
-                    let ySmooth = movingAverage(yRaw, 5);
+                    // INCREASED SMOOTHING TO 15 AS REQUESTED TO REDUCE JITTER
+                    let ySmooth = movingAverage(yRaw, 15);
                     dataPlot.push({ x: pyData.map(r => r.Time), y: ySmooth, name: 'Python Sensor', line: { color: COLORS.sensor, width: 3 } });
                 }
                 if (kinData) {
                     let kinCol = (sub === "Join Angle") ? (kinData[0].hasOwnProperty('L_Knee') ? 'L_Knee' : 'Angle') : 'L_Hip_Vert';
                     if (kinData[0] && (kinData[0][kinCol] !== undefined || (kinCol = 'Angle', kinData[0]['Angle'] !== undefined))) {
                         let yRawKin = kinData.map(r => r[kinCol]);
-                        let ySmoothKin = movingAverage(yRawKin, 5);
+                        // INCREASED SMOOTHING TO 15 AS REQUESTED
+                        let ySmoothKin = movingAverage(yRawKin, 15);
                         dataPlot.push({
                             x: kinData.map(r => r.Time || (r.Frame ? r.Frame / 30 : null)),
                             y: ySmoothKin,
@@ -360,6 +367,9 @@
                 layout.title = { text: title };
                 layout.xaxis.title = "Time (s)";
                 layout.yaxis.title = "Angle (deg)";
+
+                // SET DTICK = 5 FOR ANGLES (Detailed grid)
+                layout.yaxis.dtick = 5;
             }
             else if (mode == "3") {
                 let d = sub === "Normal Walking" ? datasets.Normal_Python : datasets.Exo_Python;
@@ -399,6 +409,10 @@
                     layout.title = { text: "Cyclogram: " + sub };
                     layout.xaxis.title = "Knee Angle (deg)";
                     layout.yaxis.title = "Hip Angle (deg)";
+
+                    // SET DTICK = 5 FOR CYCLOGRAM ANGLES
+                    layout.xaxis.dtick = 5;
+                    layout.yaxis.dtick = 5;
                 }
             }
             else if (mode == "5") {
@@ -415,18 +429,21 @@
                     dataPlot.push({ y: filtered, name: 'Filter', line: { color: '#8b5cf6', width: 2 } });
                     layout.title = "Noise Check";
                     layout.yaxis.title = "Angle (deg)";
+                    layout.yaxis.dtick = 5; // Angle ticks
                 }
                 else if (sub.includes("Histogram")) {
                     dataPlot.push({ x: d.map(r => r.L_Knee), type: 'histogram', name: 'Dist.' });
                     layout.title = "Dist.";
                     layout.xaxis.title = "Angle (deg)";
                     layout.yaxis.title = "Count";
+                    layout.xaxis.dtick = 5;
                 }
                 else if (sub.includes("Drift")) {
                     let force = d.map(r => r.L_Force_kg);
                     dataPlot.push({ y: force, name: 'Force', fill: 'tozeroy' });
                     layout.title = "Drift";
                     layout.yaxis.title = "Force (kg)";
+                    layout.yaxis.dtick = 20; // Force ticks
                 }
             }
             Plotly.newPlot('plot-area', dataPlot, layout, config);
