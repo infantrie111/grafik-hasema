@@ -281,9 +281,10 @@
             const fontAxis = { family: '-apple-system, Arial', size: 16, weight: 'bold', color: '#000' };
 
             let layout = {
-                margin: { t: 50, b: 80, l: 80, r: 50 },
+                // INCREASED TOP MARGIN TO 120 TO PREVENT TITLE OVERLAP (CYCLOGRAM INCLUDED)
+                margin: { t: 120, b: 80, l: 80, r: 50 },
                 showlegend: true,
-                dragmode: 'pan', // <-- ENABLE PAN BY DEFAULT FOR CLICK & DRAG
+                dragmode: 'pan', // Enable Click-and-Drag Pan
                 legend: {
                     x: 0.02, y: 0.98,
                     xanchor: 'left', yanchor: 'top',
@@ -312,7 +313,7 @@
             };
 
             let config = {
-                scrollZoom: true, // Enable Zoom via Scroll/Trackpad
+                scrollZoom: true,
                 responsive: true,
                 displayModeBar: true,
                 displaylogo: false
@@ -321,17 +322,13 @@
             if (mode == "0" && datasets.Exo_Python) {
                 let d = datasets.Exo_Python;
                 dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_Force_kg), name: 'Force', line: { color: COLORS.norm, width: 3 } });
-                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_PWM), name: 'PWM', yaxis: 'y2', line: { color: COLORS.sensor, dash: 'dot', width: 2.5 } });
 
-                layout.yaxis2 = {
-                    overlaying: 'y', side: 'right', range: [0, 260],
-                    showgrid: false, title: 'PWM',
-                    showline: true, linewidth: 3, linecolor: COLORS.sensor,
-                    tickfont: { size: 14, weight: 'bold', color: COLORS.sensor },
-                    titlefont: { size: 16, color: COLORS.sensor }
-                };
-                layout.yaxis.title = "Force (kg)";
-                layout.title = { text: "Force vs PWM", y: 0.95 };
+                // --- SINGLE AXIS: REMOVED SECONDARY AXIS CONFIG ---
+                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_PWM), name: 'PWM', line: { color: COLORS.sensor, dash: 'dot', width: 2.5 } });
+
+                layout.yaxis.title = "Force (kg) & PWM";
+                layout.title = { text: "Force vs PWM" };
+                // Removed y-offset for title as margin handles it
             }
             else if (mode == "1" || mode == "2") {
                 let column = sub === "Join Angle" ? "L_Knee" : "L_Hip_Vert";
@@ -339,7 +336,7 @@
                 let kinData = (mode == "1") ? datasets.Normal_Kinovea : datasets.Exo_Kinovea;
 
                 let title = "";
-                if (sub === "Sumbu Vertikal") title = "Sumbu Vertikal (Orientasi Paha relatif Gravitasi)";
+                if (sub === "Sumbu Vertikal") title = "Sumbu Vertikal<br>(Orientasi Paha relatif Gravitasi)"; // Add BR for safety
                 else title = "Join Angle (Fleksi/Ekstensi Lutut)";
 
                 if (pyData) {
@@ -360,7 +357,7 @@
                         });
                     }
                 }
-                layout.title = { text: title, y: 0.98 };
+                layout.title = { text: title };
                 layout.xaxis.title = "Time (s)";
                 layout.yaxis.title = "Angle (deg)";
             }
@@ -387,7 +384,6 @@
                             y: [ySmooth[0]],
                             mode: 'markers',
                             name: 'Start',
-                            // --- WARNA KUNING UNTUK START ---
                             marker: { color: '#FFFF00', size: 16, symbol: 'circle', line: { color: 'black', width: 2 } }
                         });
 
@@ -400,7 +396,7 @@
                         });
                     }
 
-                    layout.title = { text: "Cyclogram: " + sub, y: 0.95 };
+                    layout.title = { text: "Cyclogram: " + sub };
                     layout.xaxis.title = "Knee Angle (deg)";
                     layout.yaxis.title = "Hip Angle (deg)";
                 }
@@ -409,7 +405,6 @@
                 let d = datasets.Exo_Python || datasets.Normal_Python;
                 if (!d) return;
 
-                // Common overrides for diagnostics
                 layout.xaxis.showline = true;
                 layout.yaxis.showline = true;
 
