@@ -233,7 +233,7 @@
             if (mode == "0") addOptions(sub, ["Actuator Sync"]);
             else if (mode == "1" || mode == "2") addOptions(sub, ["Sumbu Vertikal", "Join Angle"]);
             else if (mode == "3") addOptions(sub, ["Normal Walking", "Exo Assisted"]);
-            else if (mode == "5") addOptions(sub, ["Noise Check", "Histogram", "Force Drift"]);
+            else if (mode == "5") addOptions(sub, ["Noise Check", "Knee Histogram", "Force Drift", "Force FFT", "PWM Digital Step"]);
             drawPlot();
         }
 
@@ -250,6 +250,24 @@
                 result.push(sub.reduce((a, b) => a + b, 0) / sub.length);
             }
             return result;
+        }
+
+        // Simple DFT for visualization (sufficient for small gait datasets)
+        function computeDFT(signal, dt) {
+            const N = signal.length;
+            const freqs = [];
+            const mags = [];
+            for (let k = 0; k < Math.floor(N / 2); k++) {
+                let re = 0, im = 0;
+                for (let n = 0; n < N; n++) {
+                    const phi = (2 * Math.PI * k * n) / N;
+                    re += signal[n] * Math.cos(phi);
+                    im -= signal[n] * Math.sin(phi);
+                }
+                freqs.push(k / (N * dt));
+                mags.push(Math.sqrt(re * re + im * im));
+            }
+            return { x: freqs, y: mags };
         }
 
         function updateStats() {
@@ -281,7 +299,6 @@
             const fontAxis = { family: '-apple-system, Arial', size: 16, weight: 'bold', color: '#000' };
 
             let layout = {
-                // REDUCED MARGINS AS REQUESTED TO WIDEN GRAPH
                 margin: { t: 80, b: 60, l: 60, r: 20 },
                 showlegend: true,
                 dragmode: 'pan',
@@ -306,7 +323,7 @@
                     titlefont: fontAxis
                 },
                 hovermode: 'closest',
-                title: { font: fontTitle, y: 0.95 }, // MOVED TITLE SLIGHTLY UP (0.95)
+                title: { font: fontTitle, y: 0.95 },
                 font: fontBase,
                 paper_bgcolor: '#fff',
                 plot_bgcolor: '#fff'
@@ -327,8 +344,8 @@
                 dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_PWM), name: 'PWM', line: { color: COLORS.sensor, dash: 'dot', width: 2.5 } });
 
                 layout.yaxis.title = "Force (kg) & PWM";
-                layout.xaxis.title = "Time (s)"; // ADDED LABEL HERE
-                layout.title = { text: "Force vs PWM", font: fontTitle, y: 0.95 }; // Explicit Title Pos
+                layout.xaxis.title = "Time (s)";
+                layout.title = { text: "Force vs PWM", font: fontTitle, y: 0.95 };
 
                 layout.yaxis.dtick = 20;
             }
@@ -359,7 +376,7 @@
                         });
                     }
                 }
-                layout.title = { text: title, font: fontTitle, y: 0.95 }; // Explicit Title Pos
+                layout.title = { text: title, font: fontTitle, y: 0.95 };
                 layout.xaxis.title = "Time (s)";
                 layout.yaxis.title = "Angle (deg)";
                 layout.yaxis.dtick = 5;
@@ -399,7 +416,7 @@
                         });
                     }
 
-                    layout.title = { text: "Cyclogram: " + sub, font: fontTitle, y: 0.95 }; // Explicit Title Pos
+                    layout.title = { text: "Cyclogram: " + sub, font: fontTitle, y: 0.95 };
                     layout.xaxis.title = "Knee Angle (deg)";
                     layout.yaxis.title = "Hip Angle (deg)";
 
@@ -421,20 +438,42 @@
                     dataPlot.push({ y: filtered, name: 'Filter', line: { color: '#8b5cf6', width: 2 } });
                     layout.title = { text: "Noise Check", font: fontTitle, y: 0.95 };
                     layout.yaxis.title = "Angle (deg)";
+                    layout.xaxis.title = "Time (s)";
                     layout.yaxis.dtick = 5;
                 }
                 else if (sub.includes("Histogram")) {
                     dataPlot.push({ x: d.map(r => r.L_Knee), type: 'histogram', name: 'Dist.' });
-                    layout.title = { text: "Dist.", font: fontTitle, y: 0.95 };
+                    layout.title = { text: "Knee Histogram", font: fontTitle, y: 0.95 };
                     layout.xaxis.title = "Angle (deg)";
                     layout.yaxis.title = "Count";
                     layout.xaxis.dtick = 5;
                 }
-                else if (sub.includes("Drift")) {
+                else if (sub.includes("Force Drift")) {
                     let force = d.map(r => r.L_Force_kg);
                     dataPlot.push({ y: force, name: 'Force', fill: 'tozeroy' });
-                    layout.title = { text: "Drift", font: fontTitle, y: 0.95 };
+                    layout.title = { text: "Force Drift", font: fontTitle, y: 0.95 };
                     layout.yaxis.title = "Force (kg)";
+                    layout.xaxis.title = "Sample";
+                    layout.yaxis.dtick = 20;
+                }
+                // --- NEW DIAGNOSTICS ---
+                else if (sub.includes("FFT")) {
+                    let force = d.map(r => r.L_Force_kg);
+                    let dt = (d.length > 1) ? (d[1].Time - d[0].Time) : 0.02;
+                    if (!dt || dt < 0) dt = 0.02;
+                    let res = computeDFT(force, dt);
+                    dataPlot.push({ x: res.x, y: res.y, type: 'scatter', mode: 'lines', name: 'Magnitude', line: { color: '#000', width: 2 } });
+                    layout.title = { text: "Force FFT", font: fontTitle, y: 0.95 };
+                    layout.xaxis.title = "Frequency (Hz)";
+                    layout.yaxis.title = "Magnitude";
+                    layout.xaxis.range = [0, 25];
+                }
+                else if (sub.includes("PWM Digital")) {
+                    let pwm = d.map(r => r.L_PWM);
+                    dataPlot.push({ x: d.map(r => r.Time), y: pwm, type: 'scatter', mode: 'lines', line: { shape: 'hv', width: 2, color: COLORS.sensor }, name: 'PWM Step' });
+                    layout.title = { text: "PWM Digital Step", font: fontTitle, y: 0.95 };
+                    layout.xaxis.title = "Time (s)";
+                    layout.yaxis.title = "PWM Value";
                     layout.yaxis.dtick = 20;
                 }
             }
