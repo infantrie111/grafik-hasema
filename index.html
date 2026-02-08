@@ -233,7 +233,7 @@
             if (mode == "0") addOptions(sub, ["Actuator Sync"]);
             else if (mode == "1" || mode == "2") addOptions(sub, ["Sumbu Vertikal", "Join Angle"]);
             else if (mode == "3") addOptions(sub, ["Normal Walking", "Exo Assisted"]);
-            else if (mode == "5") addOptions(sub, ["Noise Check", "Knee Histogram", "Force Drift", "Force FFT", "PWM Digital Step"]);
+            else if (mode == "5") addOptions(sub, ["Noise Check", "Knee Histogram", "Force Drift", "Force FFT", "PWM Digital Step", "Knee-Cable Relation"]);
             drawPlot();
         }
 
@@ -475,6 +475,45 @@
                     layout.xaxis.title = "Time (s)";
                     layout.yaxis.title = "PWM Value";
                     layout.yaxis.dtick = 20;
+                }
+                // --- KNEE-CABLE RELATION (DUAL Y-AXIS) ---
+                else if (sub.includes("Knee-Cable")) {
+                    const PULLEY_RADIUS = 0.0127; // meters
+                    let kneeAngle = d.map(r => r.L_Knee);
+                    // Calculate cable displacement: d = r × θ (rad) = r × (θ_deg × π/180)
+                    let cableDisp = kneeAngle.map(angle => PULLEY_RADIUS * angle * Math.PI / 180 * 100); // Convert to cm
+
+                    dataPlot.push({
+                        x: d.map(r => r.Time),
+                        y: kneeAngle,
+                        name: 'Knee Angle',
+                        line: { color: COLORS.norm, width: 3 }
+                    });
+
+                    dataPlot.push({
+                        x: d.map(r => r.Time),
+                        y: cableDisp,
+                        name: 'Cable Displacement',
+                        yaxis: 'y2',
+                        line: { color: COLORS.sensor, dash: 'dot', width: 2.5 }
+                    });
+
+                    layout.yaxis2 = {
+                        overlaying: 'y',
+                        side: 'right',
+                        showgrid: false,
+                        title: 'Cable Displacement (cm)',
+                        showline: true,
+                        linewidth: 3,
+                        linecolor: COLORS.sensor,
+                        tickfont: { size: 14, weight: 'bold', color: COLORS.sensor },
+                        titlefont: { size: 16, color: COLORS.sensor }
+                    };
+
+                    layout.yaxis.title = "Knee Angle (deg)";
+                    layout.xaxis.title = "Time (s)";
+                    layout.title = { text: "Knee Angle vs Cable Displacement", font: fontTitle, y: 0.95 };
+                    layout.yaxis.dtick = 10;
                 }
             }
             Plotly.newPlot('plot-area', dataPlot, layout, config);
