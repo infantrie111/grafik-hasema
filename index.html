@@ -149,6 +149,43 @@
             width: 100%;
             height: 100%;
         }
+
+        /* --- DRAGGABLE SVG DIAGRAMS --- */
+        .diagram-box {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+            /* Background transparan */
+            border-radius: 12px;
+            padding: 10px;
+            /* Border removed */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            /* Soft shadow */
+            cursor: move;
+            user-select: none;
+            z-index: 1000;
+            display: none;
+            /* Hidden by default */
+            backdrop-filter: blur(4px);
+            /* Efek kaca buram */
+        }
+
+        .diagram-box.active {
+            display: block;
+        }
+
+        .diagram-title {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 8px;
+            color: #334155;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 4px;
+        }
+
+        .diagram-box svg {
+            display: block;
+        }
     </style>
 </head>
 
@@ -191,6 +228,101 @@
 
     <div id="main-content">
         <div id="plot-area"></div>
+
+        <!-- SVG Diagram: Cyclogram (Hip + Knee angles) -->
+        <div id="diagram-cyclogram" class="diagram-box" style="top: 60px; right: 20px;">
+            <div class="diagram-title">Kinematic Model</div>
+            <svg width="160" height="200" viewBox="0 0 160 200">
+                <!-- Vertical Reference (dashed) -->
+                <line x1="40" y1="20" x2="40" y2="180" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,3" />
+
+                <!-- Segments -->
+                <line x1="40" y1="40" x2="90" y2="90" stroke="#000" stroke-width="3.5" stroke-linecap="round" />
+                <!-- Hip-Knee -->
+                <line x1="90" y1="90" x2="60" y2="160" stroke="#000" stroke-width="3.5" stroke-linecap="round" />
+                <!-- Knee-Ankle -->
+
+                <!-- Arcs -->
+                <!-- Hip Angle Arc (Correct Direction) -->
+                <path d="M 40 70 Q 55 65, 60 55" stroke="#2563eb" stroke-width="2" fill="none" opacity="0.8" />
+
+                <!-- Knee Angle Arc (Restored & Corrected) -->
+                <!-- Kurva melengkung DI DALAM sudut lutut (Internal Angle) -->
+                <!-- Menghubungkan titik di paha (80,80) ke titik di betis (84,104) -->
+                <path d="M 80 80 Q 75 90, 84 104" stroke="#10b981" stroke-width="2" fill="none" opacity="0.8" />
+
+                <!-- Joints -->
+                <circle cx="40" cy="40" r="5" fill="#ef4444" stroke="#fff" stroke-width="1.5" />
+                <circle cx="90" cy="90" r="6" fill="#ef4444" stroke="#fff" stroke-width="1.5" />
+                <circle cx="60" cy="160" r="5" fill="#ef4444" stroke="#fff" stroke-width="1.5" />
+
+                <!-- TEXT LABELS with Background Circle -->
+
+                <!-- Theta 1 (Hip) -->
+                <circle cx="65" cy="55" r="11" fill="white" fill-opacity="0.9" />
+                <text x="65" y="60" font-size="16" font-weight="bold" font-style="italic" fill="#2563eb"
+                    text-anchor="middle">θ₁</text>
+
+                <!-- Theta 2 (Knee) -->
+                <!-- Posisi di sebelah kiri lutut (area kosong) -->
+                <circle cx="65" cy="95" r="11" fill="white" fill-opacity="0.9" />
+                <text x="65" y="100" font-size="16" font-weight="bold" font-style="italic" fill="#10b981"
+                    text-anchor="middle">θ₂</text>
+
+                <!-- Part Labels -->
+                <text x="10" y="45" font-size="12" font-weight="bold" fill="#333">Hip</text>
+                <text x="100" y="95" font-size="12" font-weight="bold" fill="#333">Knee</text>
+                <text x="65" y="175" font-size="12" font-weight="bold" fill="#333">Ankle</text>
+                <text x="10" y="190" font-size="10" fill="#64748b">Vertical</text>
+            </svg>
+        </div>
+
+        <!-- SVG Diagram: Knee-Cable (Simplifikasi Geometri) -->
+        <div id="diagram-knee-cable" class="diagram-box" style="top: 60px; right: 20px;">
+            <div class="diagram-title">Exo Mechanism</div>
+            <svg width="160" height="200" viewBox="0 0 160 200">
+                <!-- 1. Garis Referensi Vertikal (Dashed) -->
+                <line x1="40" y1="40" x2="40" y2="180" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
+                <text x="35" y="190" font-size="10" fill="#64748b" font-style="italic">Vertical</text>
+
+                <!-- 2. Garis Paha (Thigh Segment) -->
+                <line x1="40" y1="40" x2="85" y2="130" stroke="#000" stroke-width="5" stroke-linecap="round" />
+
+                <!-- Garis Betis (Shank Segment) - Vertikal ke bawah -->
+                <line x1="85" y1="130" x2="85" y2="185" stroke="#000" stroke-width="5" stroke-linecap="round" />
+
+                <!-- Knee Joint (Titik Merah di Lutut) -->
+                <circle cx="85" cy="130" r="5" fill="#ef4444" stroke="#fff" stroke-width="1.5" />
+                <text x="95" y="135" font-size="11" font-weight="bold" fill="#333">Knee</text>
+
+                <!-- Ankle Joint (Ujung Bawah) -->
+                <circle cx="85" cy="185" r="4" fill="#ef4444" stroke="#fff" stroke-width="1.5" />
+                <text x="95" y="188" font-size="11" font-weight="bold" fill="#333">Ankle</text>
+
+                <!-- 3. Titik Pivot (Pinggul/Hip) -->
+                <circle cx="40" cy="40" r="6" fill="white" stroke="#000" stroke-width="2" />
+                <text x="15" y="30" font-size="11" font-weight="bold" fill="#333">Hip</text>
+
+                <!-- 4. Motor/Pulley (Hijau - SANGAT DEKAT pinggul) -->
+                <!-- Digeser mendekat dari cx=90 ke cx=75 -->
+                <circle cx="75" cy="40" r="12" fill="#10b981" stroke="#065f46" stroke-width="1" />
+                <text x="75" y="25" font-size="11" font-weight="bold" fill="#10b981" text-anchor="middle">Motor</text>
+
+                <!-- 5. Kabel (Merah - Menarik Paha) -->
+                <line x1="67" y1="45" x2="72" y2="108" stroke="#ef4444" stroke-width="3" marker-end="url(#arrow)" />
+                <text x="95" y="80" font-size="11" font-weight="bold" fill="#ef4444">Cable</text>
+                <!-- Titik kait kabel di paha -->
+                <rect x="69" y="106" width="6" height="6" fill="#333" transform="rotate(-25 72 108)" />
+
+                <!-- 6. Theta (Sudut Paha) -->
+                <path d="M 40 90 Q 50 85, 55 70" stroke="#2563eb" stroke-width="2" fill="none" opacity="0.8" />
+
+                <!-- Label Theta (Digeser ke Kiri Bawah Arc) -->
+                <circle cx="45" cy="95" r="11" fill="white" fill-opacity="0.9" />
+                <text x="45" y="100" font-size="16" font-weight="bold" font-style="italic" fill="#2563eb"
+                    text-anchor="middle">θ</text>
+            </svg>
+        </div>
     </div>
 
     <script>
@@ -204,7 +336,88 @@
             { url: "FINAL_DATA_EXOSKELETON_kinovea.csv", key: "Exo_Kinovea", label: "status-Exo_Kin" }
         ];
 
-        window.onload = function () { loadDefaultFiles(); };
+        window.onload = function () {
+            loadDefaultFiles();
+            initDraggableDiagrams();
+        };
+
+        // === DRAGGABLE DIAGRAM FUNCTIONALITY ===
+        function initDraggableDiagrams() {
+            const diagrams = document.querySelectorAll('.diagram-box');
+
+            diagrams.forEach(diagram => {
+                let isDragging = false;
+                let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+
+                diagram.addEventListener('mousedown', dragStart);
+                diagram.addEventListener('touchstart', dragStart);
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('touchmove', drag);
+
+                document.addEventListener('mouseup', dragEnd);
+                document.addEventListener('touchend', dragEnd);
+
+                function dragStart(e) {
+                    if (e.type === 'touchstart') {
+                        initialX = e.touches[0].clientX - xOffset;
+                        initialY = e.touches[0].clientY - yOffset;
+                    } else {
+                        initialX = e.clientX - xOffset;
+                        initialY = e.clientY - yOffset;
+                    }
+
+                    if (e.target === diagram || diagram.contains(e.target)) {
+                        isDragging = true;
+                    }
+                }
+
+                function drag(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+
+                        if (e.type === 'touchmove') {
+                            currentX = e.touches[0].clientX - initialX;
+                            currentY = e.touches[0].clientY - initialY;
+                        } else {
+                            currentX = e.clientX - initialX;
+                            currentY = e.clientY - initialY;
+                        }
+
+                        xOffset = currentX;
+                        yOffset = currentY;
+
+                        setTranslate(currentX, currentY, diagram);
+                    }
+                }
+
+                function dragEnd() {
+                    isDragging = false;
+                }
+
+                function setTranslate(xPos, yPos, el) {
+                    el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+                }
+            });
+        }
+
+        // === DIAGRAM VISIBILITY CONTROL ===
+        function updateDiagramVisibility(mode, sub) {
+            const cyclogramDiagram = document.getElementById('diagram-cyclogram');
+            const kneeCableDiagram = document.getElementById('diagram-knee-cable');
+
+            // Hide all first
+            cyclogramDiagram.classList.remove('active');
+            kneeCableDiagram.classList.remove('active');
+
+            // Show based on mode
+            if (mode == "3") { // Cyclogram
+                cyclogramDiagram.classList.add('active');
+            } else if (mode == "5" && sub && sub.includes("Knee-Cable")) { // Knee-Cable Relation
+                kneeCableDiagram.classList.add('active');
+            }
+        }
+
 
         function loadDefaultFiles() {
             let loadedCount = 0;
@@ -292,6 +505,9 @@
             const mode = document.getElementById('mode-select').value;
             const sub = document.getElementById('sub-select').value;
             let dataPlot = [];
+
+            // Update diagram visibility based on current mode
+            updateDiagramVisibility(mode, sub);
 
             // --- STYLE SETTINGS FOR PPT/REPORT ---
             const fontBase = { family: '-apple-system, Arial', size: 14, color: '#000' };
@@ -420,8 +636,9 @@
                     layout.xaxis.title = "Knee Angle (deg)";
                     layout.yaxis.title = "Hip Angle (deg)";
 
-                    layout.xaxis.dtick = 5;
                     layout.yaxis.dtick = 5;
+
+                    // Old annotation removed - now using SVG overlay diagram
                 }
             }
             else if (mode == "5") {
@@ -476,7 +693,7 @@
                     layout.yaxis.title = "PWM Value";
                     layout.yaxis.dtick = 20;
                 }
-                // --- KNEE-CABLE RELATION (DUAL Y-AXIS) ---
+                // --- KNEE-CABLE RELATION (SCATTER PLOT) ---
                 else if (sub.includes("Knee-Cable")) {
                     const PULLEY_RADIUS = 0.0127; // meters
                     let kneeAngle = d.map(r => r.L_Knee);
@@ -484,36 +701,41 @@
                     let cableDisp = kneeAngle.map(angle => PULLEY_RADIUS * angle * Math.PI / 180 * 100); // Convert to cm
 
                     dataPlot.push({
-                        x: d.map(r => r.Time),
-                        y: kneeAngle,
-                        name: 'Knee Angle',
-                        line: { color: COLORS.norm, width: 3 }
-                    });
-
-                    dataPlot.push({
-                        x: d.map(r => r.Time),
+                        x: kneeAngle,
                         y: cableDisp,
-                        name: 'Cable Displacement',
-                        yaxis: 'y2',
-                        line: { color: COLORS.sensor, dash: 'dot', width: 2.5 }
+                        mode: 'markers',
+                        name: 'Data Points',
+                        marker: {
+                            color: kneeAngle,
+                            colorscale: 'Viridis', // Gradasi warna keren (Biru-Hijau-Kuning)
+                            size: 8,
+                            showscale: true,
+                            colorbar: {
+                                title: 'Angle Intensity',
+                                titleside: 'right'
+                            }
+                        }
                     });
 
-                    layout.yaxis2 = {
-                        overlaying: 'y',
-                        side: 'right',
-                        showgrid: false,
-                        title: 'Cable Displacement (cm)',
-                        showline: true,
-                        linewidth: 3,
-                        linecolor: COLORS.sensor,
-                        tickfont: { size: 14, weight: 'bold', color: COLORS.sensor },
-                        titlefont: { size: 16, color: COLORS.sensor }
-                    };
+                    // Add a subtle area fill to emphasize the linear progression
+                    dataPlot.push({
+                        x: [Math.min(...kneeAngle), Math.max(...kneeAngle)],
+                        y: [Math.min(...cableDisp), Math.max(...cableDisp)],
+                        mode: 'lines',
+                        name: 'Linear Trend',
+                        line: { color: 'rgba(0,0,0,0.2)', width: 1, dash: 'dot' },
+                        fill: 'tozeroy',
+                        fillcolor: 'rgba(37, 99, 235, 0.1)' // Soft blue fill under the line
+                    });
 
-                    layout.yaxis.title = "Knee Angle (deg)";
-                    layout.xaxis.title = "Time (s)";
-                    layout.title = { text: "Knee Angle vs Cable Displacement", font: fontTitle, y: 0.95 };
-                    layout.yaxis.dtick = 10;
+                    layout.xaxis.title = "Knee Angle (deg)";
+                    layout.yaxis.title = "Cable Displacement (cm)";
+                    layout.title = { text: "Cable Displacement vs Knee Angle", font: fontTitle, y: 0.95 };
+                    layout.xaxis.dtick = 5;
+                    layout.yaxis.dtick = 0.2;
+
+                    // --- PULLEY MODEL DIAGRAM (Draggable Box) ---
+                    // Annotation handled by SVG Overlay (diagram-knee-cable)
                 }
             }
             Plotly.newPlot('plot-area', dataPlot, layout, config);
