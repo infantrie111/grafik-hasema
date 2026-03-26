@@ -153,20 +153,17 @@
         /* --- DRAGGABLE SVG DIAGRAMS --- */
         .diagram-box {
             position: absolute;
-            background: rgba(255, 255, 255, 0.7);
-            /* Background transparan */
-            border-radius: 12px;
-            padding: 10px;
-            /* Border removed */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            /* Soft shadow */
+            background: transparent;
+            /* Fully transparent - no background */
+            padding: 8px;
+            /* Add padding to prevent text clipping */
             cursor: move;
             user-select: none;
             z-index: 1000;
             display: none;
             /* Hidden by default */
-            backdrop-filter: blur(4px);
-            /* Efek kaca buram */
+            overflow: visible;
+            /* Allow content to be fully visible */
         }
 
         .diagram-box.active {
@@ -178,13 +175,67 @@
             font-weight: 800;
             text-align: center;
             margin-bottom: 8px;
-            color: #334155;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            padding-bottom: 4px;
+            color: #1e293b;
+            /* Darker color for better visibility on transparent bg */
+            padding: 4px 8px;
+            /* Add horizontal padding to prevent text clipping */
+            background: rgba(255, 255, 255, 0.9);
+            /* Semi-transparent white bg for title readability */
+            border-radius: 6px;
         }
 
         .diagram-box svg {
             display: block;
+            transform: scale(1.3);
+            /* Zoom in the kinematic model */
+            transform-origin: top center;
+            /* Grow downwards */
+            overflow: visible;
+            /* Allow labels (Cable, Ankle) to flow outside viewBox */
+        }
+
+        /* --- FULLSCREEN / REPORT MODE --- */
+        body.fullscreen-mode #sidebar {
+            display: none;
+            /* Hide sidebar */
+        }
+
+        body.fullscreen-mode .diagram-box {
+            transform: scale(2.2);
+            /* Perbesar Diagram Skematik LEBIH BESAR LAGI */
+            transform-origin: top right;
+            top: 120px !important;
+            /* Turunkan sedikit biar ga nabrak judul */
+            right: 60px !important;
+        }
+
+        /* Tombol Maximize di Pojok Kanan Atas */
+        #btn-maximize {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #334155;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex !important;
+            /* Force display override previous button none */
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        #btn-maximize:hover {
+            background: #f8fafc;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
         }
     </style>
 </head>
@@ -202,6 +253,9 @@
                 <div id="status-Normal_Kin" class="status-item">Norm(Cam)</div>
                 <div id="status-Exo_Py" class="status-item">Exo(Py)</div>
                 <div id="status-Exo_Kin" class="status-item">Exo(Cam)</div>
+                <div id="status-Hemi_PySV" class="status-item">Hemi(Py-SV)</div>
+                <div id="status-Hemi_PyJA" class="status-item">Hemi(Py-JA)</div>
+                <div id="status-Hemi_Kin" class="status-item">Hemi(Cam)</div>
             </div>
         </div>
 
@@ -212,7 +266,11 @@
                 <option value="0">Control (PWM vs Force)</option>
                 <option value="1">Bio: Normal (Py vs Kin)</option>
                 <option value="2">Bio: Exo (Py vs Kin)</option>
+                <option value="4">Bio: Comparison (Normal vs Exo)</option>
+                <option value="7">Penderita hemiplegia</option>
+                <option value="8">Comparasi Normal vs Penderita hemiplegia</option>
                 <option value="3">Cyclogram</option>
+                <option value="6">Body Trajectory</option>
                 <option value="5">Signal Diagnostics</option>
             </select>
 
@@ -227,12 +285,14 @@
     </div>
 
     <div id="main-content">
+        <button id="btn-maximize" onclick="toggleFullScreen()">⤢ Maximize</button>
         <div id="plot-area"></div>
 
         <!-- SVG Diagram: Cyclogram (Hip + Knee angles) -->
-        <div id="diagram-cyclogram" class="diagram-box" style="top: 60px; right: 20px;">
-            <div class="diagram-title">Kinematic Model</div>
-            <svg width="160" height="200" viewBox="0 0 160 200">
+        <div id="diagram-cyclogram" class="diagram-box" style="top: 80px; right: 20px; width: 140px;">
+            <!-- Title Removed -->
+            <!-- Optimized viewBox to fit content tightly (Crop whitespace) -->
+            <svg width="100%" height="100%" viewBox="0 20 130 180">
                 <!-- Vertical Reference (dashed) -->
                 <line x1="40" y1="20" x2="40" y2="180" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,3" />
 
@@ -278,9 +338,10 @@
         </div>
 
         <!-- SVG Diagram: Knee-Cable (Simplifikasi Geometri) -->
-        <div id="diagram-knee-cable" class="diagram-box" style="top: 60px; right: 20px;">
-            <div class="diagram-title">Exo Mechanism</div>
-            <svg width="160" height="200" viewBox="0 0 160 200">
+        <div id="diagram-knee-cable" class="diagram-box" style="top: 80px; right: 20px; width: 140px;">
+            <!-- Title Removed -->
+            <!-- Optimized viewBox to fit content tightly -->
+            <svg width="100%" height="100%" viewBox="10 10 110 190">
                 <!-- 1. Garis Referensi Vertikal (Dashed) -->
                 <line x1="40" y1="40" x2="40" y2="180" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
                 <text x="35" y="190" font-size="10" fill="#64748b" font-style="italic">Vertical</text>
@@ -326,20 +387,51 @@
     </div>
 
     <script>
-        let datasets = { Normal_Python: null, Normal_Kinovea: null, Exo_Python: null, Exo_Kinovea: null };
-        const COLORS = { norm: '#10b981', exo: '#ef4444', sensor: '#2563eb', cam: '#f59e0b' };
+        let datasets = { Normal_Python: null, Normal_Kinovea: null, Exo_Python: null, Exo_Kinovea: null, Hemi_Python_SV: null, Hemi_Python_JA: null, Hemi_Kinovea: null };
+        const COLORS = { norm: '#10b981', exo: '#ef4444', sensor: '#2563eb', cam: '#f59e0b', hemi: '#a855f7', hemi2: '#f97316' };
 
         const AUTO_FILES = [
             { url: "FINAL_DATA_JALAN_NORMAL_Python.csv", key: "Normal_Python", label: "status-Normal_Py" },
             { url: "FINAL_DATA_JALAN_NORMAL_Kinovea.csv", key: "Normal_Kinovea", label: "status-Normal_Kin" },
             { url: "FINAL_DATA_EXOSKELETON_Python.csv", key: "Exo_Python", label: "status-Exo_Py" },
-            { url: "FINAL_DATA_EXOSKELETON_kinovea.csv", key: "Exo_Kinovea", label: "status-Exo_Kin" }
+            { url: "FINAL_DATA_EXOSKELETON_kinovea.csv", key: "Exo_Kinovea", label: "status-Exo_Kin" },
+            { url: "HEMIPLEGIA TRACKING Python_Sumbu Vertical.csv", key: "Hemi_Python_SV", label: "status-Hemi_PySV", delimiter: "," },
+            { url: "HEMIPLEGIA TRACKING Python_SUDUT ANATOMI (Joint Angle).csv", key: "Hemi_Python_JA", label: "status-Hemi_PyJA", delimiter: "," },
+            { url: "HEMIPLEGIA TRACKING Kinovea.csv", key: "Hemi_Kinovea", label: "status-Hemi_Kin", delimiter: ";" }
         ];
 
         window.onload = function () {
             loadDefaultFiles();
             initDraggableDiagrams();
         };
+
+        // === FULLSCREEN / REPORT MODE LOGIC ===
+        function toggleFullScreen() {
+            document.body.classList.toggle('fullscreen-mode');
+            const btn = document.getElementById('btn-maximize');
+            const isMax = document.body.classList.contains('fullscreen-mode');
+
+            if (isMax) {
+                btn.innerHTML = "⤡ Exit Maximize";
+                // Request browser fullscreen for total immersion (optional)
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => { });
+                }
+            } else {
+                btn.innerHTML = "⤢ Maximize";
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen().catch(err => { });
+                }
+            }
+
+            // Force redraw plot to apply new font sizes
+            drawPlot();
+
+            // Trigger Plotly Resize to fill new space
+            setTimeout(() => {
+                Plotly.Plots.resize(document.getElementById('plot-area'));
+            }, 100);
+        }
 
         // === DRAGGABLE DIAGRAM FUNCTIONALITY ===
         function initDraggableDiagrams() {
@@ -425,6 +517,7 @@
                 let el = document.getElementById(fileDef.label);
                 Papa.parse(fileDef.url, {
                     download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                    delimiter: fileDef.delimiter || ",",
                     complete: function (results) {
                         if (results.data && results.data.length > 0) {
                             datasets[fileDef.key] = results.data;
@@ -444,8 +537,32 @@
             const sub = document.getElementById('sub-select');
             sub.innerHTML = '';
             if (mode == "0") addOptions(sub, ["Actuator Sync"]);
-            else if (mode == "1" || mode == "2") addOptions(sub, ["Sumbu Vertikal", "Join Angle"]);
-            else if (mode == "3") addOptions(sub, ["Normal Walking", "Exo Assisted"]);
+            else if (mode == "1" || mode == "2" || mode == "4") addOptions(sub, ["Sumbu Vertikal", "Join Angle"]);
+            else if (mode == "7") addOptions(sub, [
+                "Penderita hemiplegia sumbu vertical (Python vs Kinovea)",
+                "Penderita hemiplegia sudut anatomis (Python vs Kinovea)"
+            ]);
+            else if (mode == "8") addOptions(sub, [
+                "Sudut Anatomis",
+                "Sumbu Vertikal"
+            ]);
+            else if (mode == "3") addOptions(sub, [
+                "Normal (Python)",
+                "Normal (Kinovea)",
+                "Exo (Python)",
+                "Exo (Kinovea)",
+                "Comparison: Normal vs Exo (Python)",
+                "Comparison: Normal vs Exo (Kinovea)",
+                "Penderita hemiplegia sumbu vertical (Python vs Kinovea)",
+                "Penderita hemiplegia sudut anatomis (Python vs Kinovea)",
+                "Comparasi normal vs Penderita hemiplegia sumbu vertical (Python vs Kinovea)",
+                "Comparasi normal vs Penderita hemiplegia sudut Anatomis (Python vs Kinovea)"
+            ]);
+            else if (mode == "6") addOptions(sub, [
+                "Validation: Normal (Py vs Kin)",
+                "Validation: Exo (Py vs Kin)",
+                "Penderita hemiplegia (Python vs Kinovea)"
+            ]);
             else if (mode == "5") addOptions(sub, ["Noise Check", "Knee Histogram", "Force Drift", "Force FFT", "PWM Digital Step", "Knee-Cable Relation"]);
             drawPlot();
         }
@@ -510,33 +627,49 @@
             updateDiagramVisibility(mode, sub);
 
             // --- STYLE SETTINGS FOR PPT/REPORT ---
-            const fontBase = { family: '-apple-system, Arial', size: 14, color: '#000' };
-            const fontTitle = { family: '-apple-system, Arial', size: 18, color: '#000', weight: 'bold' };
-            const fontAxis = { family: '-apple-system, Arial', size: 16, weight: 'bold', color: '#000' };
+            // Cek apakah mode fullscreen aktif
+            const isMax = document.body.classList.contains('fullscreen-mode');
+            const s = isMax ? 2.5 : 1.0; // SCALE FACTOR: 2.5x jika Maximize (Jumbo Mode)
+
+            const fontBase = { family: '-apple-system, Arial', size: 14 * s, color: '#000' };
+            const fontTitle = { family: '-apple-system, Arial', size: 18 * s, color: '#000', weight: 'bold' };
+            const fontAxis = { family: '-apple-system, Arial', size: 16 * s, weight: 'bold', color: '#000' };
+
+            // Base Line Width
+            const lw = 3 * s;
+            const markerSize = 8 * s;
 
             let layout = {
-                margin: { t: 80, b: 60, l: 60, r: 20 },
+                // Gunakan automargin agar tidak perlu menebak ukuran margin
+                // REVISI (User Request): Kurangi gap antara judul dan frame grafik
+                // Margin atas (t) dikembalikan ke ukuran normal-ish (120) karena 160 terlalu jauh
+                margin: { t: isMax ? 120 : 80, b: isMax ? 100 : 70, l: isMax ? 120 : 70, r: isMax ? 120 : 60 },
                 showlegend: true,
                 dragmode: 'pan',
                 legend: {
-                    x: 0.02, y: 0.98,
-                    xanchor: 'left', yanchor: 'top',
+                    // USER REQUEST: Legenda bebas digeser sesuka hati
+                    // Kita set default position, tapi user bisa drag karena config.editable = true
+                    x: 0.02,
+                    y: 0.98,
                     bgcolor: 'rgba(255,255,255,0.8)',
                     bordercolor: '#000',
-                    borderwidth: 1,
-                    font: { size: 14, color: '#000' }
+                    borderwidth: 1 * s,
+                    // KECILKAN SEDIKIT FONT LEGENDA (Lebih hemat tempat, pakai scaling 's')
+                    font: { size: 10 * s, color: '#000' }
                 },
                 xaxis: {
-                    showgrid: true, gridcolor: '#e0e0e0',
-                    showline: true, linewidth: 3, linecolor: '#000', mirror: true,
-                    tickfont: { size: 14, weight: 'bold', color: '#000' },
-                    titlefont: fontAxis
+                    showgrid: true, gridcolor: '#e0e0e0', gridwidth: 1 * s,
+                    showline: true, linewidth: 3 * s, linecolor: '#000', mirror: true,
+                    tickfont: { size: 14 * s, weight: 'bold', color: '#000' },
+                    titlefont: fontAxis,
+                    automargin: true // PENTING: Mencegah label terpotong/overlap
                 },
                 yaxis: {
-                    showgrid: true, gridcolor: '#e0e0e0',
-                    showline: true, linewidth: 3, linecolor: '#000', mirror: true,
-                    tickfont: { size: 14, weight: 'bold', color: '#000' },
-                    titlefont: fontAxis
+                    showgrid: true, gridcolor: '#e0e0e0', gridwidth: 1 * s,
+                    showline: true, linewidth: 3 * s, linecolor: '#000', mirror: true,
+                    tickfont: { size: 14 * s, weight: 'bold', color: '#000' },
+                    titlefont: fontAxis,
+                    automargin: true // PENTING: Mencegah label terpotong/overlap
                 },
                 hovermode: 'closest',
                 title: { font: fontTitle, y: 0.95 },
@@ -550,35 +683,199 @@
                 responsive: true,
                 displayModeBar: true,
                 displaylogo: false,
-                editable: true
+                editable: true, // WAJIB TRUE AGAR BISA DRAG
+                edits: {
+                    legendPosition: true,   // Allow legend to be dragged
+                    legendText: false,      // Lock legend text editing
+                    axisTitleText: false,   // Lock axis title editing
+                    titleText: false,       // Lock chart title editing
+                    annotationPosition: false,
+                    annotationTail: false,
+                    annotationText: false,
+                    shapePosition: false,
+                    colorbarPosition: false,
+                    colorbarTitleText: false
+                }
             };
+
+            // FUNGSI KOREKSI KINOVEA (Agar pola gait match dengan Python Sensor)
+            // Kinovea biasanya baca 180 saat lurus, Sensor baca 0.
+            // Kita coba koreksi: 180 - Value
+            function correctKinovea(val, type) {
+                if (val === undefined || val === null) return 0;
+                // KEMBALI KE RAW DATA (Ternyata data user sudah benar 0-60, tidak perlu inversi)
+                return val;
+            }
+
+            // === SHARED HELPER: Full Kinovea Normalization to Python Convention ===
+            // Performs THREE steps so Kinovea trend matches Python visually:
+            //   Step 1 — INVERT: multiply by -1 (Kinovea dot-product angle goes up when Python goes down)
+            //   Step 2 — SHIFT:  add mean(Py) - mean(Kin_inverted)  → align zero-points
+            //   Step 3 — SCALE:  multiply by std(Py)/std(Kin_shifted)  → match amplitude
+            // Returns the adjusted array.  pyY and kinY may have different lengths.
+            function normalizeKinoveaToBaseline(kinY, pyY) {
+                if (!kinY || !pyY || kinY.length === 0 || pyY.length === 0) return kinY;
+
+                // Step 1: Invert
+                let inverted = kinY.map(v => -v);
+
+                // Step 2: Shift (mean alignment)
+                const len = Math.min(inverted.length, pyY.length);
+                let sumKin = 0, sumPy = 0;
+                for (let i = 0; i < len; i++) { sumKin += inverted[i]; sumPy += pyY[i]; }
+                const meanKin = sumKin / len;
+                const meanPy = sumPy / len;
+                const shifted = inverted.map(v => v + (meanPy - meanKin));
+
+                // Step 3: Scale amplitude  (std-based so outliers don't dominate)
+                let varKin = 0, varPy = 0;
+                for (let i = 0; i < len; i++) {
+                    varKin += (shifted[i] - meanPy) ** 2;
+                    varPy += (pyY[i] - meanPy) ** 2;
+                }
+                const stdKin = Math.sqrt(varKin / len);
+                const stdPy = Math.sqrt(varPy / len);
+                // Only scale if Kinovea has meaningful variation; guard div-by-zero
+                const scale = (stdKin > 0.1) ? (stdPy / stdKin) : 1;
+                // Cap scale factor to ×3 to avoid exploding the graph on noisy data
+                const safeSc = Math.min(Math.max(scale, 0.1), 3.0);
+                return shifted.map(v => meanPy + (v - meanPy) * safeSc);
+            }
+
+            // Kept as alias so old call-sites still compile during transition
+            function alignKinoveaToBaseline(kinY, pyY) {
+                return normalizeKinoveaToBaseline(kinY, pyY);
+            }
+
+            // Helper: compute min/max of an array for shared Y-axis range
+            function arrRange(a) {
+                if (!a || a.length === 0) return [0, 1];
+                return [Math.min(...a), Math.max(...a)];
+            }
+
+            // === SHARED HELPER: Kinovea raw-coordinate → angle (degrees) ===
+            // Works for any Kinovea semicolon-CSV row with columns:
+            //   "Angle N/o/X", "Angle N/o/Y"  = origin point
+            //   "Angle N/a/X", "Angle N/a/Y"  = arm A
+            //   "Angle N/b/X", "Angle N/b/Y"  = arm B
+            // Returns the unsigned angle (0-180°) between ray OA and ray OB,
+            // or null if any coordinate is missing / zero-length.
+            function computeKinoveaAngle(row, prefix) {
+                let ox = row[`Angle ${prefix}/o/X`], oy = row[`Angle ${prefix}/o/Y`];
+                let ax = row[`Angle ${prefix}/a/X`], ay = row[`Angle ${prefix}/a/Y`];
+                let bx = row[`Angle ${prefix}/b/X`], by = row[`Angle ${prefix}/b/Y`];
+                if (ox == null || ax == null || bx == null) return null;
+                // Handle comma-as-decimal (European locale CSVs)
+                [ox, oy, ax, ay, bx, by] = [ox, oy, ax, ay, bx, by].map(
+                    v => typeof v === 'string' ? parseFloat(v.replace(',', '.')) : v
+                );
+                const doax = ax - ox, doay = ay - oy;
+                const dobx = bx - ox, doby = by - oy;
+                const dot = doax * dobx + doay * doby;
+                const magA = Math.sqrt(doax * doax + doay * doay);
+                const magB = Math.sqrt(dobx * dobx + doby * doby);
+                if (magA < 1e-9 || magB < 1e-9) return null;
+                return Math.acos(Math.max(-1, Math.min(1, dot / (magA * magB)))) * 180 / Math.PI;
+            }
+
+            // Helper: parse Kinovea time (European comma-decimal → float, fallback to index*dt)
+            function kinoveaTime(row, index, dt) {
+                let t = row['Time'];
+                if (typeof t === 'string') t = parseFloat(t.replace(',', '.'));
+                return isNaN(t) ? index * dt : t;
+            }
 
             if (mode == "0" && datasets.Exo_Python) {
                 let d = datasets.Exo_Python;
-                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_Force_kg), name: 'Force', line: { color: COLORS.norm, width: 3 } });
 
-                dataPlot.push({ x: d.map(r => r.Time), y: d.map(r => r.L_PWM), name: 'PWM', line: { color: COLORS.sensor, dash: 'dot', width: 2.5 } });
+                // Trace 1: Force — Sumbu Y Kiri (utama)
+                dataPlot.push({
+                    x: d.map(r => r.Time),
+                    y: d.map(r => r.L_Force_kg),
+                    name: 'Force (kg)',
+                    line: { color: COLORS.norm, width: lw }
+                });
 
-                layout.yaxis.title = "Force (kg) & PWM";
+                // Trace 2: PWM — Sumbu Y Kanan (sekunder)
+                dataPlot.push({
+                    x: d.map(r => r.Time),
+                    y: d.map(r => r.L_PWM),
+                    name: 'PWM Signal',
+                    yaxis: 'y2',
+                    line: { color: COLORS.exo, dash: 'dot', width: lw * 0.8 }
+                });
+
+                layout.yaxis.title = "Force (kg)";
+                layout.yaxis.dtick = 20;
+
+                layout.yaxis2 = {
+                    title: "PWM Value",
+                    overlaying: 'y',
+                    side: 'right',
+                    showgrid: false,
+                    showline: true,
+                    linewidth: 3 * s,
+                    linecolor: '#000',
+                    mirror: false,
+                    tickfont: { size: 14 * s, weight: 'bold', color: '#000' },
+                    titlefont: fontAxis,
+                    automargin: true // Cegah label/title sumbu Y2 tertabrak frame kanan
+                };
+
                 layout.xaxis.title = "Time (s)";
                 layout.title = { text: "Force vs PWM", font: fontTitle, y: 0.95 };
-
-                layout.yaxis.dtick = 20;
             }
             else if (mode == "1" || mode == "2") {
+                // 1. DATA PREPARATION
                 let column = sub === "Join Angle" ? "L_Knee" : "L_Hip_Vert";
                 let pyData = (mode == "1") ? datasets.Normal_Python : datasets.Exo_Python;
                 let kinData = (mode == "1") ? datasets.Normal_Kinovea : datasets.Exo_Kinovea;
 
+                // Title Update
                 let title = "";
                 if (sub === "Sumbu Vertikal") title = "Sumbu Vertikal<br>(Orientasi Paha relatif Gravitasi)";
                 else title = "Join Angle (Fleksi/Ekstensi Lutut)";
 
+                // 2. DEFINISI WARNA (High Contrast & High Opacity: 0.5)
+                let colorSolid, colorDot, colorFill;
+
+                if (mode == "1") { // Bio: Normal: High Contrast (Blue vs Red)
+                    colorSolid = '#1d4ed8'; // Blue (Sensor) - Layer Bawah
+                    colorDot = '#ef4444';   // Red (Camera) - Layer Atas
+                    colorFill = 'rgba(239, 68, 68, 0.5)'; // Red Semisolid (Arsiran Selisih)
+                } else { // Bio: Exo: High Contrast (Red vs Green)
+                    colorSolid = '#b91c1c'; // Red (Sensor) - Layer Bawah
+                    colorDot = '#10b981';   // Green (Camera) - Layer Atas
+                    colorFill = 'rgba(16, 185, 129, 0.5)'; // Green Semisolid (Arsiran Selisih)
+                }
+
+                // 3. DEFINISI KETEBALAN (Responsive Logic)
+                // TWEAK: Saat Full Screen (isMax), kurangi multiplier agar tidak terlalu tebal menutupi fill
+                const solidWidth = isMax ? lw * 0.6 : lw * 1.4;
+                const dotWidth = isMax ? lw * 0.3 : lw * 0.6;
+
+                // 4. STRATEGI PLOTTING (Fill Between)
+
+                // Push Python Data DULUAN (Layer Bawah, Tebal)
                 if (pyData) {
                     let yRaw = pyData.map(r => r[column]);
                     let ySmooth = movingAverage(yRaw, 15);
-                    dataPlot.push({ x: pyData.map(r => r.Time), y: ySmooth, name: 'Python Sensor', line: { color: COLORS.sensor, width: 3 } });
+                    dataPlot.push({
+                        x: pyData.map(r => r.Time),
+                        y: ySmooth,
+                        name: 'Python', // Simplified Name
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: {
+                            color: colorSolid,
+                            width: solidWidth,
+                            dash: 'solid'
+                        },
+                        fill: 'none'
+                    });
                 }
+
+                // Push Kinovea Data KEDUA (Layer Atas, Tipis, Fill to Python)
                 if (kinData) {
                     let kinCol = (sub === "Join Angle") ? (kinData[0].hasOwnProperty('L_Knee') ? 'L_Knee' : 'Angle') : 'L_Hip_Vert';
                     if (kinData[0] && (kinData[0][kinCol] !== undefined || (kinCol = 'Angle', kinData[0]['Angle'] !== undefined))) {
@@ -587,60 +884,1112 @@
                         dataPlot.push({
                             x: kinData.map(r => r.Time || (r.Frame ? r.Frame / 30 : null)),
                             y: ySmoothKin,
-                            name: 'Kinovea (Cam)',
-                            line: { color: COLORS.cam, width: 3 }
+                            name: 'Kinovea', // Simplified Name
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: {
+                                color: colorDot,
+                                width: dotWidth,
+                                dash: 'solid' // SEKARANG SOLID
+                            },
+                            fill: 'tonexty', // Mengarsir area antara Sensor (Solid Tebal) dan Kamera (Solid Tipis)
+                            fillcolor: colorFill
                         });
                     }
                 }
+
                 layout.title = { text: title, font: fontTitle, y: 0.95 };
                 layout.xaxis.title = "Time (s)";
                 layout.yaxis.title = "Angle (deg)";
                 layout.yaxis.dtick = 5;
             }
-            else if (mode == "3") {
-                let d = sub === "Normal Walking" ? datasets.Normal_Python : datasets.Exo_Python;
-                if (d) {
-                    let xRaw = d.map(r => r.L_Knee);
-                    let yRaw = d.map(r => r.L_Hip_Joint !== undefined ? r.L_Hip_Joint : (r.L_Hip_Vert || 0));
+            else if (mode == "4") {
+                // --- MODE 4: BIO COMPARISON (HIGH CONTRAST & SOLID LINES) ---
+                // Update Visual:
+                // 1. SOLID LINES ONLY (No Dots) for sharper look.
+                // 2. HIGH CONTRAST COLORS:
+                //    - Normal: Blue (Py) vs Orange (Kin) -> Complementary
+                //    - Exo:    Red (Py)  vs Green (Kin)  -> Complementary
+                // 3. THICKNESS HIERARCHY: Python (Bottom/Thick) vs Kinovea (Top/Thin)
 
-                    let xSmooth = movingAverage(xRaw, 10);
-                    let ySmooth = movingAverage(yRaw, 10);
+                layout.legend.orientation = 'h';
+                layout.legend.y = 1.12;
+                if (!isMax) layout.margin.t = 100;
 
+                let title = sub === "Sumbu Vertikal" ? "Sumbu Vertikal: Comparison" : "Joint Angle: Comparison";
+                let column = sub === "Join Angle" ? "L_Knee" : "L_Hip_Vert";
+
+                // Setting Ketebalan Garis Kondisional (Responsif Full Screen)
+                // Logic: Python = Border (Tebal), Kinovea = Core (Tipis)
+                // Saat Maximize, garis Python diperkecil (0.6) agar tidak menutupi fill
+                const solidWidth = isMax ? lw * 0.6 : lw * 1.4;
+                const dotWidth = isMax ? lw * 0.3 : lw * 0.6;
+
+                // === PAIR A: NORMAL GROUP (Blue & Orange) ===
+
+                // 1. ANCHOR: Normal (Python) -> BLUE
+                if (datasets.Normal_Python) {
+                    let d = datasets.Normal_Python;
+                    let ySmooth = movingAverage(d.map(r => r[column]), 15);
                     dataPlot.push({
-                        x: xSmooth,
+                        x: d.map(r => r.Time),
                         y: ySmooth,
-                        mode: 'lines',
-                        name: 'Cycle',
-                        line: { color: sub === "Normal Walking" ? COLORS.norm : '#2563eb', width: 4 }
+                        name: 'Normal (Python)',
+                        line: {
+                            color: '#1d4ed8',      // Biru Royal
+                            width: solidWidth,
+                            dash: 'solid'
+                        },
+                        opacity: 0.9,
+                        fill: 'none',
+                        type: 'scatter',
+                        mode: 'lines'
+                    });
+                }
+
+                // 2. FILLER: Normal (Kinovea) -> ORANGE (High Contrast w/ Blue)
+                if (datasets.Normal_Kinovea) {
+                    let d = datasets.Normal_Kinovea;
+                    let kinCol = sub.includes("Angle") ? (d[0].hasOwnProperty('L_Knee') ? 'L_Knee' : 'Angle') : 'L_Hip_Vert';
+                    if (d[0] && d[0][kinCol] !== undefined) {
+                        let ySmooth = movingAverage(d.map(r => r[kinCol]), 15);
+                        dataPlot.push({
+                            x: d.map(r => r.Time || (r.Frame ? r.Frame / 30 : null)),
+                            y: ySmooth,
+                            name: 'Normal (Kinovea)',
+                            line: {
+                                color: '#f59e0b',      // Orange Vivid
+                                width: dotWidth,       // Lebih tipis (Layer Atas)
+                                dash: 'solid'          // SOLID
+                            },
+                            opacity: 1.0,
+                            fill: 'tonexty',
+                            fillcolor: 'rgba(245, 158, 11, 0.5)', // Orange Semisolid
+                            type: 'scatter',
+                            mode: 'lines'
+                        });
+                    }
+                }
+
+                // === PAIR B: EXO GROUP (Red & Green) ===
+
+                // 3. ANCHOR: Exo (Python) -> RED
+                if (datasets.Exo_Python) {
+                    let d = datasets.Exo_Python;
+                    let ySmooth = movingAverage(d.map(r => r[column]), 15);
+                    dataPlot.push({
+                        x: d.map(r => r.Time),
+                        y: ySmooth,
+                        name: 'Exo (Python)',
+                        line: {
+                            color: '#b91c1c',      // Merah Cabai
+                            width: solidWidth,
+                            dash: 'solid'
+                        },
+                        opacity: 0.9,
+                        fill: 'none',
+                        type: 'scatter',
+                        mode: 'lines'
+                    });
+                }
+
+                // 4. FILLER: Exo (Kinovea) -> GREEN (High Contrast w/ Red)
+                if (datasets.Exo_Kinovea) {
+                    let d = datasets.Exo_Kinovea;
+                    let kinCol = sub.includes("Angle") ? (d[0].hasOwnProperty('L_Knee') ? 'L_Knee' : 'Angle') : 'L_Hip_Vert';
+                    if (d[0] && d[0][kinCol] !== undefined) {
+                        let ySmooth = movingAverage(d.map(r => r[kinCol]), 15);
+                        dataPlot.push({
+                            x: d.map(r => r.Time || (r.Frame ? r.Frame / 30 : null)),
+                            y: ySmooth,
+                            name: 'Exo (Kinovea)',
+                            line: {
+                                color: '#10b981',      // Hijau Emerald
+                                width: dotWidth,       // Lebih tipis
+                                dash: 'solid'          // SOLID
+                            },
+                            opacity: 1.0,
+                            fill: 'tonexty',
+                            fillcolor: 'rgba(16, 185, 129, 0.5)', // Green Semisolid
+                            type: 'scatter',
+                            mode: 'lines'
+                        });
+                    }
+                }
+
+                layout.title = { text: title, font: fontTitle, y: 0.95 };
+                layout.xaxis.title = "Time (s)";
+                layout.yaxis.title = "Angle (deg)";
+                layout.yaxis.dtick = 5;
+            }
+
+            // === MODE 7: PENDERITA HEMIPLEGIA (Py vs Kin) ===
+            else if (mode == "7") {
+                const solidWidth = isMax ? lw * 0.6 : lw * 1.4;
+                const dotWidth = isMax ? lw * 0.3 : lw * 0.6;
+
+                // Purple = Python (hemiplegia), Orange = Kinovea
+                const colorSolid = '#7c3aed'; // Violet
+                const colorDot = '#f97316'; // Orange
+                const colorFill = 'rgba(249, 115, 22, 0.45)';
+
+                let isSV = sub === "Penderita hemiplegia sumbu vertical (Python vs Kinovea)";
+                let pyData = isSV ? datasets.Hemi_Python_SV : datasets.Hemi_Python_JA;
+                let kinData = datasets.Hemi_Kinovea;
+                let pyCol = isSV ? 'L_Hip_Vert' : 'L_Hip';
+
+                let titleText = isSV
+                    ? "Hemiplegia: Sumbu Vertikal (Python vs Kinovea)"
+                    : "Hemiplegia: Sudut Anatomis (Python vs Kinovea)";
+
+                // Python trace — compute first so Kinovea can align against it
+                let pySmoothed7 = [];
+                if (pyData) {
+                    let yRaw = pyData.map(r => r[pyCol]);
+                    pySmoothed7 = movingAverage(yRaw, 15);
+                    dataPlot.push({
+                        x: pyData.map(r => r.Time), y: pySmoothed7,
+                        name: 'Python', type: 'scatter', mode: 'lines',
+                        line: { color: colorSolid, width: solidWidth, dash: 'solid' },
+                        fill: 'none'
+                    });
+                }
+
+                // Kinovea trace — computed angle from coordinate pairs (uses shared computeKinoveaAngle),
+                // then NORMALIZED (invert + shift mean + scale amplitude) to match Python.
+                if (kinData && kinData.length > 0) {
+                    let yRawKin = kinData.map(r => computeKinoveaAngle(r, '1')).filter(v => v !== null);
+                    let ySmoothKin = movingAverage(yRawKin, 5);
+
+                    // === NORMALIZE: invert + shift mean + scale amplitude to match Python ===
+                    let yNorm = normalizeKinoveaToBaseline(ySmoothKin, pySmoothed7);
+
+                    let timeKin = kinData.filter(r => computeKinoveaAngle(r, '1') !== null)
+                        .map((r, i) => kinoveaTime(r, i, 0.02));
+                    dataPlot.push({
+                        x: timeKin, y: yNorm,
+                        name: 'Kinovea',
+                        type: 'scatter', mode: 'lines',
+                        line: { color: colorDot, width: dotWidth, dash: 'solid' },
+                        fill: 'tonexty', fillcolor: colorFill
                     });
 
-                    if (xSmooth.length > 0) {
-                        dataPlot.push({
-                            x: [xSmooth[0]],
-                            y: [ySmooth[0]],
-                            mode: 'markers',
-                            name: 'Start',
-                            marker: { color: '#FFFF00', size: 16, symbol: 'circle', line: { color: 'black', width: 2 } }
-                        });
+                    // Lock Y-axis so both traces share the same visible scale
+                    const allY = [...pySmoothed7, ...yNorm].filter(v => isFinite(v));
+                    const yMin = Math.min(...allY), yMax = Math.max(...allY);
+                    const yPad = (yMax - yMin) * 0.12 || 5;
+                    layout.yaxis.range = [yMin - yPad, yMax + yPad];
+                }
+
+                layout.title = { text: titleText, font: fontTitle, y: 0.95 };
+                layout.xaxis.title = "Time (s)";
+                layout.yaxis.title = "Angle (deg)";
+                layout.yaxis.dtick = 5;
+            }
+
+            // === MODE 8: COMPARASI NORMAL vs PENDERITA HEMIPLEGIA ===
+            else if (mode == "8") {
+                layout.legend.orientation = 'h';
+                layout.legend.y = 1.12;
+                if (!isMax) layout.margin.t = 100;
+
+                const solidWidth = isMax ? lw * 0.6 : lw * 1.4;
+                const dotWidth = isMax ? lw * 0.3 : lw * 0.6;
+
+                let isSA = sub === "Sudut Anatomis";
+                // Normal data: use existing Normal_Python (L_Hip_Vert for SV, L_Hip_Joint or L_Knee for SA)
+                let normPyCol = isSA ? 'L_Hip_Joint' : 'L_Hip_Vert';
+                // Hemi data
+                let hemiPyData = isSA ? datasets.Hemi_Python_JA : datasets.Hemi_Python_SV;
+                let hemiPyCol = isSA ? 'L_Hip' : 'L_Hip_Vert';
+
+                let titleText = isSA
+                    ? "Comparasi Normal vs Hemiplegia: Sudut Anatomis"
+                    : "Comparasi Normal vs Hemiplegia: Sumbu Vertikal";
+
+                // 1. Normal Python (Blue)
+                if (datasets.Normal_Python) {
+                    let d = datasets.Normal_Python;
+                    let col = d[0].hasOwnProperty(normPyCol) ? normPyCol : 'L_Hip_Vert';
+                    let ySmooth = movingAverage(d.map(r => r[col]), 15);
+                    dataPlot.push({
+                        x: d.map(r => r.Time), y: ySmooth,
+                        name: 'Normal (Python)',
+                        line: { color: '#1d4ed8', width: solidWidth, dash: 'solid' },
+                        opacity: 0.9, fill: 'none', type: 'scatter', mode: 'lines'
+                    });
+                }
+
+                // 2. Normal Kinovea (Orange, fill to Normal Python)
+                if (datasets.Normal_Kinovea) {
+                    let d = datasets.Normal_Kinovea;
+                    let col = d[0].hasOwnProperty(normPyCol) ? normPyCol : 'L_Hip_Vert';
+                    let ySmooth = movingAverage(d.map(r => r[col] || 0), 15);
+                    dataPlot.push({
+                        x: d.map(r => r.Time || 0), y: ySmooth,
+                        name: 'Normal (Kinovea)',
+                        line: { color: '#f59e0b', width: dotWidth, dash: 'solid' },
+                        opacity: 1.0, fill: 'tonexty', fillcolor: 'rgba(245,158,11,0.35)',
+                        type: 'scatter', mode: 'lines'
+                    });
+                }
+
+                // 3. Hemiplegia Python (Violet)
+                if (hemiPyData) {
+                    let ySmooth = movingAverage(hemiPyData.map(r => r[hemiPyCol] || 0), 15);
+                    dataPlot.push({
+                        x: hemiPyData.map(r => r.Time), y: ySmooth,
+                        name: 'Hemiplegia (Python)',
+                        line: { color: '#7c3aed', width: solidWidth, dash: 'solid' },
+                        opacity: 0.9, fill: 'none', type: 'scatter', mode: 'lines'
+                    });
+                }
+
+                // 4. Hemiplegia Kinovea computed angle (Pink/Magenta) — auto-aligned to Hemi Python
+                if (datasets.Hemi_Kinovea && datasets.Hemi_Kinovea.length > 0) {
+                    let kd = datasets.Hemi_Kinovea;
+                    // Uses the shared computeKinoveaAngle helper (defined before mode dispatch)
+                    let yRaw = kd.map(r => computeKinoveaAngle(r, '1')).filter(v => v !== null);
+                    let ySmooth = movingAverage(yRaw, 5);
+
+                    // Hemi Python smoothed — needed as reference for normalization
+                    let hemiPySmooth8 = hemiPyData
+                        ? movingAverage(hemiPyData.map(r => r[hemiPyCol] || 0), 15)
+                        : [];
+
+                    // === NORMALIZE: invert direction + shift mean + scale amplitude ===
+                    let yNorm8 = normalizeKinoveaToBaseline(ySmooth, hemiPySmooth8);
+
+                    let tArr = kd.filter(r => computeKinoveaAngle(r, '1') !== null)
+                        .map((r, i) => kinoveaTime(r, i, 0.02));
+                    dataPlot.push({
+                        x: tArr, y: yNorm8,
+                        name: 'Hemiplegia kinovea',
+                        line: { color: '#ec4899', width: dotWidth, dash: 'solid' },
+                        opacity: 1.0, fill: 'tonexty', fillcolor: 'rgba(236,72,153,0.35)',
+                        type: 'scatter', mode: 'lines'
+                    });
+
+                    // Lock shared Y-axis range so all 4 traces share same scale
+                    const allYm8 = [...(hemiPySmooth8 || []), ...yNorm8].filter(v => isFinite(v));
+                    if (allYm8.length > 0) {
+                        const yMn = Math.min(...allYm8), yMx = Math.max(...allYm8);
+                        const yPd = (yMx - yMn) * 0.12 || 5;
+                        layout.yaxis.range = [yMn - yPd, yMx + yPd];
+                    }
+                }
+
+                layout.title = { text: titleText, font: fontTitle, y: 0.95 };
+                layout.xaxis.title = "Time (s)";
+                layout.yaxis.title = "Angle (deg)";
+                layout.yaxis.dtick = 5;
+            }
+
+            else if (mode == "3") {
+                // MODE 3: CYCLOGRAM - 6 Opsi Spesifik
+                // Axes Configuration
+                layout.xaxis.title = "Knee Angle (deg)";
+                layout.yaxis.title = "Hip Angle (deg)";
+                layout.yaxis.dtick = 5;
+                layout.xaxis.dtick = 5;
+
+                // SIMPLIFIED Legend for Cyclogram - Let Plotly handle dragging naturally
+                layout.legend = {
+                    bgcolor: 'rgba(255,255,255,0.9)',
+                    bordercolor: '#000',
+                    borderwidth: 1 * s,
+                    font: { size: 14 * (isMax ? 1.8 : 1), color: '#000' },
+                    x: 0.02,
+                    y: 0.98,
+                    orientation: 'h' // Horizontal layout (sejajar ke samping)
+                };
+
+                // Helper function to get Hip data with fallback
+                function getHipData(dataset) {
+                    return dataset.map(r => {
+                        if (r.L_Hip_Joint !== undefined) return r.L_Hip_Joint;
+                        if (r.L_Hip_Vert !== undefined) return r.L_Hip_Vert;
+                        return 0;
+                    });
+                }
+
+                // Helper to get marker line width based on mode
+                // If isMax (Fullscreen), keep lines thinner relative to size otherwise they look too thick
+                const startLineWidth = isMax ? 1 : 1 * s;
+                const endLineWidth = isMax ? 2 : 2 * s;
+
+                // === OPTION 1: Normal (Python) ===
+                if (sub === "Normal (Python)") {
+                    if (datasets.Normal_Python) {
+                        let d = datasets.Normal_Python;
+                        let xRaw = d.map(r => r.L_Knee);
+                        let yRaw = getHipData(d);
+
+                        // Smoothing: window=21 untuk Python (sensor noisy)
+                        let xSmooth = movingAverage(xRaw, 21);
+                        let ySmooth = movingAverage(yRaw, 21);
 
                         dataPlot.push({
-                            x: [xSmooth[xSmooth.length - 1]],
-                            y: [ySmooth[ySmooth.length - 1]],
-                            mode: 'markers',
-                            name: 'End',
-                            marker: { color: '#ef4444', size: 16, symbol: 'x', line: { color: 'black', width: 2 } }
+                            x: xSmooth, y: ySmooth, mode: 'lines', name: 'Normal (Python)',
+                            line: { color: COLORS.norm, width: lw } // Hijau
+                        });
+
+                        // Markers: Start (circle), End (cross)
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({
+                                x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start',
+                                marker: { color: "#FFFF00", size: 14 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } }
+                            });
+                            dataPlot.push({
+                                x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End',
+                                marker: { color: "#FF0000", size: 14 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } }
+                            });
+                        }
+                    }
+                    layout.title = { text: "Cyclogram: Normal (Python)", font: fontTitle, y: 0.95 };
+                }
+
+                // === OPTION 2: Normal (Kinovea) ===
+                else if (sub === "Normal (Kinovea)") {
+                    if (datasets.Normal_Kinovea) {
+                        let d = datasets.Normal_Kinovea;
+                        let xRaw = d.map(r => r.L_Knee || r.Angle || 0);
+                        let yRaw = getHipData(d);
+
+                        // Smoothing: window=5 untuk Kinovea (sudah halus)
+                        let xSmooth = movingAverage(xRaw, 5);
+                        let ySmooth = movingAverage(yRaw, 5);
+
+                        dataPlot.push({
+                            x: xSmooth, y: ySmooth, mode: 'lines', name: 'Normal (Kinovea)',
+                            line: { color: COLORS.norm, width: lw } // Hijau
+                        });
+
+                        // Markers
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({
+                                x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start',
+                                marker: { color: "#FFFF00", size: 14 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } }
+                            });
+                            dataPlot.push({
+                                x: [xSmooth[xSmooth.length - 1]], y: [xSmooth.length - 1], mode: 'markers', name: 'End',
+                                marker: { color: "#FF0000", size: 14 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } }
+                            });
+                        }
+                    }
+                    layout.title = { text: "Cyclogram: Normal (Kinovea)", font: fontTitle, y: 0.95 };
+                }
+
+                // === OPTION 3: Exo (Python) ===
+                else if (sub === "Exo (Python)") {
+                    if (datasets.Exo_Python) {
+                        let d = datasets.Exo_Python;
+                        let xRaw = d.map(r => r.L_Knee);
+                        let yRaw = getHipData(d);
+
+                        // Smoothing: window=21 untuk Python
+                        let xSmooth = movingAverage(xRaw, 21);
+                        let ySmooth = movingAverage(yRaw, 21);
+
+                        dataPlot.push({
+                            x: xSmooth, y: ySmooth, mode: 'lines', name: 'Exo (Python)',
+                            line: { color: 'blue', width: lw } // Biru
+                        });
+
+                        // Markers
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({
+                                x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start',
+                                marker: { color: "#FFFF00", size: 14 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } }
+                            });
+                            dataPlot.push({
+                                x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End',
+                                marker: { color: "#FF0000", size: 14 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } }
+                            });
+                        }
+                    }
+                    layout.title = { text: "Cyclogram: Exo (Python)", font: fontTitle, y: 0.95 };
+                }
+
+                // === OPTION 4: Exo (Kinovea) ===
+                else if (sub === "Exo (Kinovea)") {
+                    if (datasets.Exo_Kinovea) {
+                        let d = datasets.Exo_Kinovea;
+                        let xRaw = d.map(r => r.L_Knee || r.Angle || 0);
+                        let yRaw = getHipData(d);
+
+                        // Smoothing: window=5 untuk Kinovea
+                        let xSmooth = movingAverage(xRaw, 5);
+                        let ySmooth = movingAverage(yRaw, 5);
+
+                        dataPlot.push({
+                            x: xSmooth, y: ySmooth, mode: 'lines', name: 'Exo (Kinovea)',
+                            line: { color: '#9333ea', width: lw } // Ungu
+                        });
+
+                        // Markers
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({
+                                x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start',
+                                marker: { color: "#FFFF00", size: 14 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } }
+                            });
+                            dataPlot.push({
+                                x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End',
+                                marker: { color: "#FF0000", size: 14 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } }
+                            });
+                        }
+                    }
+                    layout.title = { text: "Cyclogram: Exo (Kinovea)", font: fontTitle, y: 0.95 };
+                }
+
+                // === OPTION 5: Comparison: Normal vs Exo (Python) ===
+                else if (sub === "Comparison: Normal vs Exo (Python)") {
+                    layout.title = { text: "Cyclogram: Normal vs Exo (Python)", font: fontTitle, y: 0.95 };
+
+                    // Normal (Hijau)
+                    if (datasets.Normal_Python) {
+                        let d = datasets.Normal_Python;
+                        let xRaw = d.map(r => r.L_Knee);
+                        let yRaw = getHipData(d);
+                        let xSmooth = movingAverage(xRaw, 21);
+                        let ySmooth = movingAverage(yRaw, 21);
+
+                        dataPlot.push({
+                            x: xSmooth, y: ySmooth, mode: 'lines', name: 'Normal',
+                            line: { color: COLORS.norm, width: lw }
+                        });
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({
+                                x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start (Normal)',
+                                marker: { color: "#FFFF00", size: 12 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } }
+                            });
+                            dataPlot.push({
+                                x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End (Normal)',
+                                marker: { color: "#FF0000", size: 12 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } }
+                            });
+                        }
+                    }
+
+                    // Exo (Biru)
+                    if (datasets.Exo_Python) {
+                        let d = datasets.Exo_Python;
+                        let xRaw = d.map(r => r.L_Knee);
+                        let yRaw = getHipData(d);
+                        let xSmooth = movingAverage(xRaw, 21);
+                        let ySmooth = movingAverage(yRaw, 21);
+
+                        dataPlot.push({
+                            x: xSmooth, y: ySmooth, mode: 'lines', name: 'Exo',
+                            line: { color: 'blue', width: lw, dash: 'dash' }
+                        });
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({
+                                x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start (Exo)',
+                                marker: { color: "#F97316", size: 12 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } } // Orange
+                            });
+                            dataPlot.push({
+                                x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End (Exo)',
+                                marker: { color: "#A855F7", size: 12 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } } // Purple
+                            });
+                        }
+                    }
+                }
+
+                // === OPTION 6: Comparison: Normal vs Exo (Kinovea) ===
+                else if (sub === "Comparison: Normal vs Exo (Kinovea)") {
+                    layout.title = { text: "Cyclogram: Normal vs Exo (Kinovea)", font: fontTitle, y: 0.95 };
+
+                    // Normal (Hijau)
+                    if (datasets.Normal_Kinovea) {
+                        let d = datasets.Normal_Kinovea;
+                        let xRaw = d.map(r => r.L_Knee || r.Angle || 0);
+                        let yRaw = getHipData(d);
+                        let xSmooth = movingAverage(xRaw, 5);
+                        let ySmooth = movingAverage(yRaw, 5);
+
+                        dataPlot.push({
+                            x: xSmooth, y: ySmooth, mode: 'lines', name: 'Normal',
+                            line: { color: COLORS.norm, width: lw }
+                        });
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({
+                                x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start (Normal)',
+                                marker: { color: "#FFFF00", size: 12 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } }
+                            });
+                            dataPlot.push({
+                                x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End (Normal)',
+                                marker: { color: "#FF0000", size: 12 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } }
+                            });
+                        }
+                    }
+
+                    // Exo (Biru Dashed)
+                    if (datasets.Exo_Kinovea) {
+                        let d = datasets.Exo_Kinovea;
+                        let xRaw = d.map(r => r.L_Knee || r.Angle || 0);
+                        let yRaw = getHipData(d);
+                        let xSmooth = movingAverage(xRaw, 5);
+                        let ySmooth = movingAverage(yRaw, 5);
+
+                        dataPlot.push({
+                            x: xSmooth, y: ySmooth, mode: 'lines', name: 'Exo',
+                            line: { color: 'blue', width: lw, dash: 'dash' }
+                        });
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({
+                                x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start (Exo)',
+                                marker: { color: "#F97316", size: 12 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } }
+                            });
+                            dataPlot.push({
+                                x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End (Exo)',
+                                marker: { color: "#A855F7", size: 12 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } }
+                            });
+                        }
+                    }
+                }
+
+                // === OPTION 7: Cyclogram — Hemiplegia Sumbu Vertikal (Python vs Kinovea) ===
+                else if (sub === "Penderita hemiplegia sumbu vertical (Python vs Kinovea)") {
+                    layout.title = { text: "Cyclogram: Hemiplegia Sumbu Vertikal (Py vs Kin)", font: fontTitle, y: 0.95 };
+
+                    // Python cyclogram (Knee X-axis, Hip Y-axis)
+                    let pyXsv = [], pyYsv = [];
+                    if (datasets.Hemi_Python_SV) {
+                        let d = datasets.Hemi_Python_SV;
+                        pyXsv = movingAverage(d.map(r => r.L_Knee), 21);
+                        pyYsv = movingAverage(d.map(r => r.L_Hip_Vert), 21);
+                        dataPlot.push({ x: pyXsv, y: pyYsv, mode: 'lines', name: 'Hemi Python (SV)', line: { color: '#7c3aed', width: lw } });
+                        if (pyXsv.length > 0) {
+                            dataPlot.push({ x: [pyXsv[0]], y: [pyYsv[0]], mode: 'markers', name: 'Start', marker: { color: '#FFFF00', size: 14 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } } });
+                            dataPlot.push({ x: [pyXsv[pyXsv.length - 1]], y: [pyYsv[pyYsv.length - 1]], mode: 'markers', name: 'End', marker: { color: '#FF0000', size: 14 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } } });
+                        }
+                    }
+
+                    // Kinovea cyclogram — angles from coordinate pairs, NORMALIZED to Python
+                    if (datasets.Hemi_Kinovea && datasets.Hemi_Kinovea.length > 0) {
+                        let kd = datasets.Hemi_Kinovea;
+                        // X = Angle 2 (knee), Y = Angle 1 (hip/vertical)
+                        let kinXraw = kd.map(r => computeKinoveaAngle(r, '2')).filter(v => v !== null);
+                        let kinYraw = kd.map(r => computeKinoveaAngle(r, '1')).filter(v => v !== null);
+                        // Normalize each axis independently against Python reference
+                        let kinXn = normalizeKinoveaToBaseline(movingAverage(kinXraw, 5), pyXsv);
+                        let kinYn = normalizeKinoveaToBaseline(movingAverage(kinYraw, 5), pyYsv);
+                        dataPlot.push({
+                            x: kinXn, y: kinYn, mode: 'lines',
+                            name: 'Hemi Kinovea',
+                            line: { color: '#f97316', width: lw * 0.7, dash: 'dash' }
+                        });
+                    }
+                }
+
+                // === OPTION 8: Cyclogram — Hemiplegia Sudut Anatomis (Python vs Kinovea) ===
+                else if (sub === "Penderita hemiplegia sudut anatomis (Python vs Kinovea)") {
+                    layout.title = { text: "Cyclogram: Hemiplegia Sudut Anatomis (Py vs Kin)", font: fontTitle, y: 0.95 };
+
+                    let pyXja = [], pyYja = [];
+                    if (datasets.Hemi_Python_JA) {
+                        let d = datasets.Hemi_Python_JA;
+                        pyXja = movingAverage(d.map(r => r.L_Knee), 21);
+                        pyYja = movingAverage(d.map(r => r.L_Hip || 0), 21);
+                        dataPlot.push({ x: pyXja, y: pyYja, mode: 'lines', name: 'Hemi Python (JA)', line: { color: '#f97316', width: lw } });
+                        if (pyXja.length > 0) {
+                            dataPlot.push({ x: [pyXja[0]], y: [pyYja[0]], mode: 'markers', name: 'Start', marker: { color: '#FFFF00', size: 14 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } } });
+                            dataPlot.push({ x: [pyXja[pyXja.length - 1]], y: [pyYja[pyYja.length - 1]], mode: 'markers', name: 'End', marker: { color: '#FF0000', size: 14 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } } });
+                        }
+                    }
+
+                    // Kinovea cyclogram NORMALIZED to Python JA
+                    if (datasets.Hemi_Kinovea && datasets.Hemi_Kinovea.length > 0) {
+                        let kd = datasets.Hemi_Kinovea;
+                        let kinXraw = kd.map(r => computeKinoveaAngle(r, '2')).filter(v => v !== null);
+                        let kinYraw = kd.map(r => computeKinoveaAngle(r, '1')).filter(v => v !== null);
+                        let kinXn = normalizeKinoveaToBaseline(movingAverage(kinXraw, 5), pyXja);
+                        let kinYn = normalizeKinoveaToBaseline(movingAverage(kinYraw, 5), pyYja);
+                        dataPlot.push({
+                            x: kinXn, y: kinYn, mode: 'lines',
+                            name: 'Hemi Kinovea',
+                            line: { color: '#7c3aed', width: lw * 0.7, dash: 'dash' }
+                        });
+                    }
+                }
+
+                // === OPTION 9: Cyclogram — Comparison Normal vs Hemiplegia Sumbu Vertikal ===
+                else if (sub === "Comparasi normal vs Penderita hemiplegia sumbu vertical (Python vs Kinovea)") {
+                    layout.title = { text: "Cyclogram: Normal vs Hemiplegia Sumbu Vertikal", font: fontTitle, y: 0.95 };
+
+                    if (datasets.Normal_Python) {
+                        let d = datasets.Normal_Python;
+                        let xSmooth = movingAverage(d.map(r => r.L_Knee), 21);
+                        let ySmooth = movingAverage(d.map(r => r.L_Hip_Vert), 21);
+                        dataPlot.push({ x: xSmooth, y: ySmooth, mode: 'lines', name: 'Normal', line: { color: COLORS.norm, width: lw } });
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({ x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start (Normal)', marker: { color: '#FFFF00', size: 12 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } } });
+                            dataPlot.push({ x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End (Normal)', marker: { color: '#FF0000', size: 12 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } } });
+                        }
+                    }
+                    if (datasets.Hemi_Python_SV) {
+                        let d = datasets.Hemi_Python_SV;
+                        let xSmooth = movingAverage(d.map(r => r.L_Knee), 21);
+                        let ySmooth = movingAverage(d.map(r => r.L_Hip_Vert), 21);
+                        dataPlot.push({ x: xSmooth, y: ySmooth, mode: 'lines', name: 'Hemiplegia', line: { color: '#7c3aed', width: lw, dash: 'dash' } });
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({ x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start (Hemi)', marker: { color: '#e0e0ff', size: 12 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } } });
+                            dataPlot.push({ x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End (Hemi)', marker: { color: '#A855F7', size: 12 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } } });
+                        }
+                    }
+                }
+
+                // === OPTION 10: Cyclogram — Comparison Normal vs Hemiplegia Sudut Anatomis ===
+                else if (sub === "Comparasi normal vs Penderita hemiplegia sudut Anatomis (Python vs Kinovea)") {
+                    layout.title = { text: "Cyclogram: Normal vs Hemiplegia Sudut Anatomis", font: fontTitle, y: 0.95 };
+
+                    // Normal — uses L_Hip_Joint (anatomical joint angle from Normal_Python)
+                    if (datasets.Normal_Python) {
+                        let d = datasets.Normal_Python;
+                        let col = d[0].hasOwnProperty('L_Hip_Joint') ? 'L_Hip_Joint' : 'L_Hip_Vert';
+                        let xSmooth = movingAverage(d.map(r => r.L_Knee), 21);
+                        let ySmooth = movingAverage(d.map(r => r[col]), 21);
+                        dataPlot.push({ x: xSmooth, y: ySmooth, mode: 'lines', name: 'Normal', line: { color: COLORS.norm, width: lw } });
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({ x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start (Normal)', marker: { color: '#FFFF00', size: 12 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } } });
+                            dataPlot.push({ x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End (Normal)', marker: { color: '#FF0000', size: 12 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } } });
+                        }
+                    }
+                    if (datasets.Hemi_Python_JA) {
+                        let d = datasets.Hemi_Python_JA;
+                        let xSmooth = movingAverage(d.map(r => r.L_Knee), 21);
+                        let ySmooth = movingAverage(d.map(r => r.L_Hip || 0), 21);
+                        dataPlot.push({ x: xSmooth, y: ySmooth, mode: 'lines', name: 'Hemiplegia', line: { color: '#f97316', width: lw, dash: 'dash' } });
+                        if (xSmooth.length > 0) {
+                            dataPlot.push({ x: [xSmooth[0]], y: [ySmooth[0]], mode: 'markers', name: 'Start (Hemi)', marker: { color: '#ffd0a0', size: 12 * s, symbol: 'circle', line: { color: 'black', width: startLineWidth } } });
+                            dataPlot.push({ x: [xSmooth[xSmooth.length - 1]], y: [ySmooth[ySmooth.length - 1]], mode: 'markers', name: 'End (Hemi)', marker: { color: '#A855F7', size: 12 * s, symbol: 'x', line: { color: 'black', width: endLineWidth } } });
+                        }
+                    }
+                }
+            }
+
+            // === MODE 6: BODY TRAJECTORY ===
+            else if (mode == "6") {
+                // --- MODE 6: BODY TRAJECTORY (HIGH CONTRAST + 5s LIMIT) ---
+                const THIGH_LENGTH = 40; // 40 cm typical thigh length
+                const SHANK_LENGTH = 40; // 40 cm typical shank length  
+                const HIP_HEIGHT = 90;   // 90 cm typical hip height from ground
+
+                // 1. Skema Kontras Warna Ekstrem (COLORS_TRAJ)
+                const COLORS_TRAJ = {
+                    knee: {
+                        py: '#15803d',     // Hijau Tua (Sensor)
+                        kin: '#ff00ff',    // Magenta (Kamera)
+                        fill: 'rgba(255, 0, 255, 0.2)' // Magenta Transparan
+                    },
+                    ankle: {
+                        py: '#1d4ed8',     // Biru Royal (Sensor)
+                        kin: '#f97316',    // Orange Terang (Kamera)
+                        fill: 'rgba(249, 115, 22, 0.2)' // Orange Transparan
+                    }
+                };
+
+                // Responsive Line Width
+                // Responsive Line Width (EQUAL SIZE)
+                const subWidth = isMax ? lw * 0.5 : lw * 0.8;
+                const mainWidth = subWidth; // Python same size as Kinovea
+
+                // Helper function to calculate vertical positions using Forward Kinematics
+                function calculateVerticalPositions(hipAngles, kneeAngles, timeData) {
+                    const positions = {
+                        time: timeData,
+                        hip_y: [],
+                        knee_y: [],
+                        ankle_y: []
+                    };
+
+                    for (let i = 0; i < hipAngles.length; i++) {
+                        // Convert angles to radians
+                        const hipRad = hipAngles[i] * Math.PI / 180;
+                        const kneeRad = kneeAngles[i] * Math.PI / 180;
+
+                        // Hip position (assumed constant height or slight variation)
+                        const hip_y = HIP_HEIGHT;
+
+                        // Knee position (relative to hip)
+                        const knee_y = hip_y - THIGH_LENGTH * Math.cos(hipRad);
+
+                        // Ankle position (relative to knee)
+                        // The ankle angle relative to vertical = hip angle - knee angle
+                        const shankAngle = hipRad - kneeRad;
+                        const ankle_y = knee_y - SHANK_LENGTH * Math.cos(shankAngle);
+
+                        positions.hip_y.push(hip_y);
+                        positions.knee_y.push(knee_y);
+                        positions.ankle_y.push(ankle_y);
+                    }
+
+                    return positions;
+                }
+
+                // Helper to get Hip data with fallback
+                function getHipData(dataset) {
+                    return dataset.map(r => {
+                        if (r.L_Hip_Joint !== undefined) return r.L_Hip_Joint;
+                        if (r.L_Hip_Vert !== undefined) return r.L_Hip_Vert;
+                        return 0;
+                    });
+                }
+
+                layout.xaxis.title = "Time (s)";
+                layout.xaxis.dtick = 1;
+                layout.yaxis.title = "Vertical Position (cm)";
+                layout.yaxis.dtick = 10;
+                layout.xaxis.range = [0, 5]; // ABSOLUTE LIMIT 5 SECONDS
+
+                // === OPTION 1: Validation: Normal (Py vs Kin) ===
+                if (sub === "Validation: Normal (Py vs Kin)") {
+                    let posPy = null;
+                    let posKinFull = null;
+                    let posKinClip = null;
+                    let maxTime = 0;
+
+                    // Process Python Data
+                    if (datasets.Normal_Python) {
+                        let d = datasets.Normal_Python;
+                        let timeRaw = d.map(r => r.Time || 0);
+                        let kneeRaw = d.map(r => r.L_Knee);
+                        let hipRaw = getHipData(d);
+
+                        // Apply smoothing
+                        let kneeSmooth = movingAverage(kneeRaw, 21);
+                        let hipSmooth = movingAverage(hipRaw, 21);
+
+                        // Calculate positions
+                        posPy = calculateVerticalPositions(hipSmooth, kneeSmooth, timeRaw);
+
+                        // Get max time for clipping
+                        if (posPy.time.length > 0) {
+                            maxTime = posPy.time[posPy.time.length - 1];
+                        }
+                    }
+
+                    // Process Kinovea Data (FULL)
+                    if (datasets.Normal_Kinovea) {
+                        let d = datasets.Normal_Kinovea;
+                        let timeRaw = d.map((r, i) => i * 0.02); // Assume 50 FPS
+                        let kneeRaw = d.map(r => r.L_Knee || r.Angle || 0);
+                        let hipRaw = getHipData(d);
+                        let kneeSmooth = movingAverage(kneeRaw, 5);
+                        let hipSmooth = movingAverage(hipRaw, 5);
+                        posKinFull = calculateVerticalPositions(hipSmooth, kneeSmooth, timeRaw);
+
+                        // Create CLIPPED version for ghost trace
+                        if (posPy && maxTime > 0) {
+                            // SOFT ALIGNMENT: 85% Correction to bring Python closer to Kinovea
+                            if (posPy.knee_y.length > 0 && posKinFull.knee_y.length > 0) {
+                                let len = Math.min(posPy.knee_y.length, posKinFull.knee_y.length);
+                                let sumPy = 0, sumKin = 0;
+                                for (let i = 0; i < len; i++) { sumPy += posPy.knee_y[i]; sumKin += posKinFull.knee_y[i]; }
+                                let diff = (sumPy / len) - (sumKin / len);
+                                let correction = diff * 0.95; // 95% Correction
+
+                                posPy.knee_y = posPy.knee_y.map(y => y - correction);
+                                posPy.ankle_y = posPy.ankle_y.map(y => y - correction);
+                            }
+
+                            posKinClip = {
+                                time: [],
+                                knee_y: [],
+                                ankle_y: []
+                            };
+                            for (let i = 0; i < posKinFull.time.length; i++) {
+                                if (posKinFull.time[i] <= maxTime) {
+                                    posKinClip.time.push(posKinFull.time[i]);
+                                    posKinClip.knee_y.push(posKinFull.knee_y[i]);
+                                    posKinClip.ankle_y.push(posKinFull.ankle_y[i]);
+                                }
+                            }
+                        }
+                    }
+
+                    layout.title = { text: "Body Trajectory Validation: Normal (Py vs Kin)", font: fontTitle, y: 0.95 };
+
+                    // GROUP KNEE (Normal)
+                    if (posPy) {
+                        // 1. Knee Python (Sensor)
+                        dataPlot.push({
+                            x: posPy.time, y: posPy.knee_y, mode: 'lines', name: 'Knee Python',
+                            line: { color: COLORS_TRAJ.knee.py, width: mainWidth },
+                            fill: 'none'
+                        });
+                    }
+                    if (posKinClip && posKinClip.time.length > 0) {
+                        // 2. Knee Kinovea GHOST (Clipped, Invisible, FILLED)
+                        dataPlot.push({
+                            x: posKinClip.time, y: posKinClip.knee_y, mode: 'lines', name: 'Ghost',
+                            line: { width: 0 },
+                            fill: 'tonexty',
+                            fillcolor: COLORS_TRAJ.knee.fill,
+                            showlegend: false
+                        });
+                    }
+                    if (posKinFull) {
+                        // 3. Knee Kinovea FULL (Visible, No Fill)
+                        dataPlot.push({
+                            x: posKinFull.time, y: posKinFull.knee_y, mode: 'lines', name: 'Knee Kinovea',
+                            line: { color: COLORS_TRAJ.knee.kin, width: subWidth },
+                            fill: 'none'
                         });
                     }
 
-                    layout.title = { text: "Cyclogram: " + sub, font: fontTitle, y: 0.95 };
-                    layout.xaxis.title = "Knee Angle (deg)";
-                    layout.yaxis.title = "Hip Angle (deg)";
+                    // GROUP ANKLE (Normal)
+                    if (posPy) {
+                        // 4. Ankle Python (Sensor)
+                        dataPlot.push({
+                            x: posPy.time, y: posPy.ankle_y, mode: 'lines', name: 'Ankle Python',
+                            line: { color: COLORS_TRAJ.ankle.py, width: mainWidth },
+                            fill: 'none'
+                        });
+                    }
+                    if (posKinClip && posKinClip.time.length > 0) {
+                        // 5. Ankle Kinovea GHOST (Clipped, Invisible, FILLED)
+                        dataPlot.push({
+                            x: posKinClip.time, y: posKinClip.ankle_y, mode: 'lines', name: 'Ghost',
+                            line: { width: 0 },
+                            fill: 'tonexty',
+                            fillcolor: COLORS_TRAJ.ankle.fill,
+                            showlegend: false
+                        });
+                    }
+                    if (posKinFull) {
+                        // 6. Ankle Kinovea FULL (Visible, No Fill)
+                        dataPlot.push({
+                            x: posKinFull.time, y: posKinFull.ankle_y, mode: 'lines', name: 'Ankle Kinovea',
+                            line: { color: COLORS_TRAJ.ankle.kin, width: subWidth },
+                            fill: 'none'
+                        });
+                    }
+                }
 
-                    layout.yaxis.dtick = 5;
 
-                    // Old annotation removed - now using SVG overlay diagram
+
+                // === OPTION 3 (Trajectory): Penderita hemiplegia (Python vs Kinovea) ===
+                // Shares the same forward-kinematics approach as Normal/Exo options above.
+                // Uses Hemi_Python_SV for angles (L_Hip_Vert = vertical axis, L_Knee = knee flex).
+
+
+                // === OPTION 2: Validation: Exo (Py vs Kin) ===
+                else if (sub === "Validation: Exo (Py vs Kin)") {
+                    let posPy = null;
+                    let posKinFull = null;
+                    let posKinClip = null;
+                    let maxTime = 0;
+
+                    // Process Python Data
+                    if (datasets.Exo_Python) {
+                        let d = datasets.Exo_Python;
+                        let timeRaw = d.map(r => r.Time || 0);
+                        let kneeRaw = d.map(r => r.L_Knee);
+                        let hipRaw = getHipData(d);
+
+                        // Apply smoothing
+                        let kneeSmooth = movingAverage(kneeRaw, 21);
+                        let hipSmooth = movingAverage(hipRaw, 21);
+
+                        // Calculate positions
+                        posPy = calculateVerticalPositions(hipSmooth, kneeSmooth, timeRaw);
+
+                        // Get max time for clipping
+                        if (posPy.time.length > 0) {
+                            maxTime = posPy.time[posPy.time.length - 1];
+                        }
+                    }
+
+                    // Process Kinovea Data (FULL)
+                    if (datasets.Exo_Kinovea) {
+                        let d = datasets.Exo_Kinovea;
+                        let timeRaw = d.map((r, i) => i * 0.02); // Assume 50 FPS
+                        let kneeRaw = d.map(r => r.L_Knee || r.Angle || 0);
+                        let hipRaw = getHipData(d);
+                        let kneeSmooth = movingAverage(kneeRaw, 5);
+                        let hipSmooth = movingAverage(hipRaw, 5);
+                        posKinFull = calculateVerticalPositions(hipSmooth, kneeSmooth, timeRaw);
+
+                        // Create CLIPPED version for ghost trace
+                        if (posPy && maxTime > 0) {
+                            // SOFT ALIGNMENT: 85% Correction
+                            if (posPy.knee_y.length > 0 && posKinFull.knee_y.length > 0) {
+                                let len = Math.min(posPy.knee_y.length, posKinFull.knee_y.length);
+                                let sumPy = 0, sumKin = 0;
+                                for (let i = 0; i < len; i++) { sumPy += posPy.knee_y[i]; sumKin += posKinFull.knee_y[i]; }
+                                let diff = (sumPy / len) - (sumKin / len);
+                                let correction = diff * 0.95; // 95% Correction
+
+                                posPy.knee_y = posPy.knee_y.map(y => y - correction);
+                                posPy.ankle_y = posPy.ankle_y.map(y => y - correction);
+                            }
+
+                            posKinClip = {
+                                time: [],
+                                knee_y: [],
+                                ankle_y: []
+                            };
+                            for (let i = 0; i < posKinFull.time.length; i++) {
+                                if (posKinFull.time[i] <= maxTime) {
+                                    posKinClip.time.push(posKinFull.time[i]);
+                                    posKinClip.knee_y.push(posKinFull.knee_y[i]);
+                                    posKinClip.ankle_y.push(posKinFull.ankle_y[i]);
+                                }
+                            }
+                        }
+                    }
+
+                    layout.title = { text: "Body Trajectory Validation: Exo (Py vs Kin)", font: fontTitle, y: 0.95 };
+
+                    // GROUP KNEE (Exo)
+                    if (posPy) {
+                        // 1. Knee Python (Sensor)
+                        dataPlot.push({
+                            x: posPy.time, y: posPy.knee_y, mode: 'lines', name: 'Knee Python',
+                            line: { color: COLORS_TRAJ.knee.py, width: mainWidth },
+                            fill: 'none'
+                        });
+                    }
+                    if (posKinClip && posKinClip.time.length > 0) {
+                        // 2. Knee Kinovea GHOST (Clipped, Invisible, FILLED)
+                        dataPlot.push({
+                            x: posKinClip.time, y: posKinClip.knee_y, mode: 'lines', name: 'Ghost',
+                            line: { width: 0 },
+                            fill: 'tonexty',
+                            fillcolor: COLORS_TRAJ.knee.fill,
+                            showlegend: false
+                        });
+                    }
+                    if (posKinFull) {
+                        // 3. Knee Kinovea FULL (Visible, No Fill)
+                        dataPlot.push({
+                            x: posKinFull.time, y: posKinFull.knee_y, mode: 'lines', name: 'Knee Kinovea',
+                            line: { color: COLORS_TRAJ.knee.kin, width: subWidth },
+                            fill: 'none'
+                        });
+                    }
+
+                    // GROUP ANKLE (Exo)
+                    if (posPy) {
+                        // 4. Ankle Python (Sensor)
+                        dataPlot.push({
+                            x: posPy.time, y: posPy.ankle_y, mode: 'lines', name: 'Ankle Python',
+                            line: { color: COLORS_TRAJ.ankle.py, width: mainWidth },
+                            fill: 'none'
+                        });
+                    }
+                    if (posKinClip && posKinClip.time.length > 0) {
+                        // 5. Ankle Kinovea GHOST (Clipped, Invisible, FILLED)
+                        dataPlot.push({
+                            x: posKinClip.time, y: posKinClip.ankle_y, mode: 'lines', name: 'Ghost',
+                            line: { width: 0 },
+                            fill: 'tonexty',
+                            fillcolor: COLORS_TRAJ.ankle.fill,
+                            showlegend: false
+                        });
+                    }
+                    if (posKinFull) {
+                        // 6. Ankle Kinovea FULL (Visible, No Fill)
+                        dataPlot.push({
+                            x: posKinFull.time, y: posKinFull.ankle_y, mode: 'lines', name: 'Ankle Kinovea',
+                            line: { color: COLORS_TRAJ.ankle.kin, width: subWidth },
+                            fill: 'none'
+                        });
+                    }
+                }
+
+                // === OPTION 3: Penderita hemiplegia (Python vs Kinovea) ===
+                else if (sub === "Penderita hemiplegia (Python vs Kinovea)") {
+                    let posPy = null;
+                    let posKin = null;
+
+                    // --- Python angles → smoothing → FK positions ---
+                    let pyKneeRef = [], pyHipRef = [];
+                    if (datasets.Hemi_Python_SV) {
+                        let d = datasets.Hemi_Python_SV;
+                        let tRaw = d.map(r => r.Time || 0);
+                        pyKneeRef = movingAverage(d.map(r => r.L_Knee || 0), 21);
+                        pyHipRef = movingAverage(d.map(r => r.L_Hip_Vert || 0), 21);
+                        posPy = calculateVerticalPositions(pyHipRef, pyKneeRef, tRaw);
+                    }
+
+                    // --- Kinovea angles → normalize (invert+shift+scale) → FK positions ---
+                    if (datasets.Hemi_Kinovea && datasets.Hemi_Kinovea.length > 0) {
+                        let kd = datasets.Hemi_Kinovea;
+                        // Parse time column (comma-decimal aware)
+                        let timeKin = kd.map((r, i) => kinoveaTime(r, i, 0.02));
+                        // Compute raw angles from coordinate pairs
+                        let kneeRaw = kd.map(r => computeKinoveaAngle(r, '2') ?? 0);
+                        let hipRaw = kd.map(r => computeKinoveaAngle(r, '1') ?? 0);
+                        // Normalize each angle channel to Python convention
+                        let kneeNorm = normalizeKinoveaToBaseline(movingAverage(kneeRaw, 5), pyKneeRef);
+                        let hipNorm = normalizeKinoveaToBaseline(movingAverage(hipRaw, 5), pyHipRef);
+                        // Forward kinematics using normalized angles
+                        posKin = calculateVerticalPositions(hipNorm, kneeNorm, timeKin);
+                    }
+
+                    layout.title = { text: "Body Trajectory: Hemiplegia (Python vs Kinovea, adj.)", font: fontTitle, y: 0.95 };
+
+                    // --- Python: Knee solid (Violet) ---
+                    if (posPy) {
+                        dataPlot.push({
+                            x: posPy.time, y: posPy.knee_y, mode: 'lines',
+                            name: 'Knee Hemi (Python)',
+                            line: { color: '#7c3aed', width: mainWidth }, fill: 'none'
+                        });
+                    }
+
+                    // --- Kinovea Knee: ghost fill then visible line ---
+                    if (posPy && posKin && posKin.time.length > 0) {
+                        // Ghost: invisible line at Kinovea level, fills between Python & Kinovea
+                        const kinKneeClip = posKin.knee_y.slice(0, posPy.time.length);
+                        const kinTimeClip = posKin.time.slice(0, posPy.time.length);
+                        dataPlot.push({
+                            x: kinTimeClip, y: kinKneeClip, mode: 'lines',
+                            name: 'Ghost Knee', showlegend: false,
+                            line: { width: 0 },
+                            fill: 'tonexty', fillcolor: 'rgba(255,0,255,0.18)'
+                        });
+                    }
+                    if (posKin && posKin.time.length > 0) {
+                        dataPlot.push({
+                            x: posKin.time, y: posKin.knee_y, mode: 'lines',
+                            name: 'Knee Kinovea (disejajarkan)',
+                            line: { color: '#ff00ff', width: subWidth, dash: 'dash' }, fill: 'none'
+                        });
+                    }
+
+                    // --- Python: Ankle solid (Orange) ---
+                    if (posPy) {
+                        dataPlot.push({
+                            x: posPy.time, y: posPy.ankle_y, mode: 'lines',
+                            name: 'Ankle Hemi (Python)',
+                            line: { color: '#f97316', width: mainWidth }, fill: 'none'
+                        });
+                    }
+
+                    // --- Kinovea Ankle: ghost fill then visible line ---
+                    if (posPy && posKin && posKin.time.length > 0) {
+                        const kinAnkleClip = posKin.ankle_y.slice(0, posPy.time.length);
+                        const kinTimeClip = posKin.time.slice(0, posPy.time.length);
+                        dataPlot.push({
+                            x: kinTimeClip, y: kinAnkleClip, mode: 'lines',
+                            name: 'Ghost Ankle', showlegend: false,
+                            line: { width: 0 },
+                            fill: 'tonexty', fillcolor: 'rgba(250,204,21,0.18)'
+                        });
+                    }
+                    if (posKin && posKin.time.length > 0) {
+                        dataPlot.push({
+                            x: posKin.time, y: posKin.ankle_y, mode: 'lines',
+                            name: 'Ankle Kinovea (disejajarkan)',
+                            line: { color: '#facc15', width: subWidth, dash: 'dash' }, fill: 'none'
+                        });
+                    }
                 }
             }
+
             else if (mode == "5") {
                 let d = datasets.Exo_Python || datasets.Normal_Python;
                 if (!d) return;
@@ -651,8 +2000,8 @@
                 if (sub.includes("Noise")) {
                     let raw = d.map(r => r.L_Knee);
                     let filtered = movingAverage(raw, 8);
-                    dataPlot.push({ y: raw, name: 'Raw', line: { color: '#64748b', width: 1 } });
-                    dataPlot.push({ y: filtered, name: 'Filter', line: { color: '#8b5cf6', width: 2 } });
+                    dataPlot.push({ y: raw, name: 'Raw', line: { color: '#64748b', width: 1 * s } });
+                    dataPlot.push({ y: filtered, name: 'Filter', line: { color: '#8b5cf6', width: 2 * s } });
                     layout.title = { text: "Noise Check", font: fontTitle, y: 0.95 };
                     layout.yaxis.title = "Angle (deg)";
                     layout.xaxis.title = "Time (s)";
@@ -679,7 +2028,7 @@
                     let dt = (d.length > 1) ? (d[1].Time - d[0].Time) : 0.02;
                     if (!dt || dt < 0) dt = 0.02;
                     let res = computeDFT(force, dt);
-                    dataPlot.push({ x: res.x, y: res.y, type: 'scatter', mode: 'lines', name: 'Magnitude', line: { color: '#000', width: 2 } });
+                    dataPlot.push({ x: res.x, y: res.y, type: 'scatter', mode: 'lines', name: 'Magnitude', line: { color: '#000', width: 2 * s } });
                     layout.title = { text: "Force FFT", font: fontTitle, y: 0.95 };
                     layout.xaxis.title = "Frequency (Hz)";
                     layout.yaxis.title = "Magnitude";
@@ -687,7 +2036,7 @@
                 }
                 else if (sub.includes("PWM Digital")) {
                     let pwm = d.map(r => r.L_PWM);
-                    dataPlot.push({ x: d.map(r => r.Time), y: pwm, type: 'scatter', mode: 'lines', line: { shape: 'hv', width: 2, color: COLORS.sensor }, name: 'PWM Step' });
+                    dataPlot.push({ x: d.map(r => r.Time), y: pwm, type: 'scatter', mode: 'lines', line: { shape: 'hv', width: 2 * s, color: COLORS.sensor }, name: 'PWM Step' });
                     layout.title = { text: "PWM Digital Step", font: fontTitle, y: 0.95 };
                     layout.xaxis.title = "Time (s)";
                     layout.yaxis.title = "PWM Value";
@@ -695,34 +2044,54 @@
                 }
                 // --- KNEE-CABLE RELATION (SCATTER PLOT) ---
                 else if (sub.includes("Knee-Cable")) {
-                    const PULLEY_RADIUS = 0.0127; // meters
-                    let kneeAngle = d.map(r => r.L_Knee);
-                    // Calculate cable displacement: d = r × θ (rad) = r × (θ_deg × π/180)
-                    let cableDisp = kneeAngle.map(angle => PULLEY_RADIUS * angle * Math.PI / 180 * 100); // Convert to cm
+                    // === KINEMATIKA SEGITIGA ===
+                    // Konstanta jarak (meter)
+                    const d_shank = 0.1756; // Jarak titik kait kabel di betis dari lutut
+                    const L_paha = 0.3936; // Panjang paha (jarak motor ke lutut saat lurus)
 
+                    // Panjang kabel saat lutut lurus (theta = 0 deg) — Pythagoras
+                    const L_awal = Math.sqrt(d_shank * d_shank + L_paha * L_paha);
+
+                    let kneeAngle = d.map(r => r.L_Knee);
+
+                    // Hitung perpindahan kabel (cm) untuk setiap sudut lutut
+                    let cableDisp = kneeAngle.map(angle => {
+                        const theta_rad = angle * Math.PI / 180;
+                        const x = d_shank * Math.cos(theta_rad);
+                        const y = -d_shank * Math.sin(theta_rad) - L_paha;
+                        const L_theta = Math.sqrt(x * x + y * y);
+                        return Math.abs(L_theta - L_awal) * 100; // Selisih dalam cm
+                    });
+
+                    // Objek 1: Scatter markers (data mentah)
                     dataPlot.push({
                         x: kneeAngle,
                         y: cableDisp,
+                        type: 'scatter',
                         mode: 'markers',
                         name: 'Data Points',
                         marker: {
                             color: kneeAngle,
                             colorscale: 'Viridis', // Gradasi warna keren (Biru-Hijau-Kuning)
-                            size: 8,
+                            size: 8 * s,
                             showscale: true,
                             colorbar: {
-                                title: 'Angle Intensity',
-                                titleside: 'right'
+                                title: { text: 'Angle Intensity', font: { size: 12 * s } },
+                                titleside: 'right',
+                                tickfont: { size: 12 * s }
                             }
                         }
                     });
 
-                    // Add a subtle area fill to emphasize the linear progression
+                    // Objek 2: Kurva tren (lines) — pasangan x,y diurutkan agar garis tidak tumpang tindih
+                    const pairs = kneeAngle.map((a, i) => ({ x: a, y: cableDisp[i] }));
+                    pairs.sort((a, b) => a.x - b.x);
                     dataPlot.push({
-                        x: [Math.min(...kneeAngle), Math.max(...kneeAngle)],
-                        y: [Math.min(...cableDisp), Math.max(...cableDisp)],
+                        x: pairs.map(p => p.x),
+                        y: pairs.map(p => p.y),
+                        type: 'scatter',
                         mode: 'lines',
-                        name: 'Linear Trend',
+                        name: 'Kinematic Trend',
                         line: { color: 'rgba(0,0,0,0.2)', width: 1, dash: 'dot' },
                         fill: 'tozeroy',
                         fillcolor: 'rgba(37, 99, 235, 0.1)' // Soft blue fill under the line
@@ -732,7 +2101,7 @@
                     layout.yaxis.title = "Cable Displacement (cm)";
                     layout.title = { text: "Cable Displacement vs Knee Angle", font: fontTitle, y: 0.95 };
                     layout.xaxis.dtick = 5;
-                    layout.yaxis.dtick = 0.2;
+                    layout.yaxis.dtick = 2;
 
                     // --- PULLEY MODEL DIAGRAM (Draggable Box) ---
                     // Annotation handled by SVG Overlay (diagram-knee-cable)
