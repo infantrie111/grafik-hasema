@@ -212,35 +212,224 @@
         /* Tombol Maximize di Pojok Kanan Atas */
         #btn-maximize {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 12px;
+            right: 12px;
             z-index: 2000;
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1.5px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 12px;
             cursor: pointer;
             font-weight: bold;
             color: #334155;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
             display: flex !important;
-            /* Force display override previous button none */
             align-items: center;
-            gap: 8px;
-            font-size: 1rem;
+            gap: 6px;
+            font-size: 0.85rem;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         #btn-maximize:hover {
-            background: #f8fafc;
+            background: #f1f5f9;
             color: #0f172a;
             transform: translateY(-1px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        /* --- Toggle Diagram Button (Hidden on Desktop) --- */
+        #btn-toggle-diagram {
+            position: absolute;
+            top: 12px;
+            right: 130px;  /* sits left of #btn-maximize */
+            z-index: 2000;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1.5px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #334155;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            display: none !important;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        #btn-toggle-diagram:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ========== ORIENTATION OVERLAY (Portrait Block) ========== */
+        #orientation-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 24px;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #orientation-overlay .rotate-icon {
+            font-size: 4rem;
+            animation: rotatePhone 2s ease-in-out infinite;
+        }
+
+        #orientation-overlay .rotate-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        #orientation-overlay .rotate-sub {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        @keyframes rotatePhone {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-30deg); }
+            75% { transform: rotate(90deg); }
+        }
+
+        /* Show overlay ONLY on small screens in portrait */
+        @media (max-width: 932px) and (orientation: portrait) {
+            #orientation-overlay {
+                display: flex !important;
+            }
+        }
+
+        /* ========== MOBILE RESPONSIVE (< 932px) ========== */
+        @media (max-width: 932px) {
+            body {
+                flex-direction: column;
+            }
+
+            #sidebar {
+                width: 100%;
+                min-width: 100%;
+                height: auto;
+                max-height: 40vh;
+                border-right: none;
+                border-bottom: 2px solid #1e293b;
+            }
+
+            #main-content {
+                height: 60vh;
+                width: 100%;
+            }
+
+            /* Compact button sizing on mobile */
+            #btn-maximize {
+                padding: 4px 8px !important;
+                font-size: 0.7rem !important;
+                top: 8px !important;
+                right: 8px !important;
+            }
+
+            /* Toggle Diagram button: hidden by default, shown via .show-on-mobile */
+            #btn-toggle-diagram {
+                display: none !important;
+                padding: 4px 8px !important;
+                font-size: 0.7rem !important;
+                top: 8px !important;
+                right: 100px !important;
+            }
+
+            #btn-toggle-diagram.show-on-mobile {
+                display: block !important;
+            }
+
+            /* Hide diagram overlays on mobile by default */
+            .diagram-box.active {
+                display: none !important;
+            }
+
+            /* Show diagram when body has .mobile-diagram-visible.
+               Use top/left set by drag JS; scale via transform only (no translate). */
+            body.mobile-diagram-visible .diagram-box.active {
+                display: block !important;
+                transform: scale(0.55) !important;
+                transform-origin: top right;
+            }
+        }
+
+        /* ========== MOBILE LANDSCAPE OPTIMIZATION ========== */
+        @media (max-width: 932px) and (orientation: landscape) {
+            body {
+                flex-direction: row !important;
+            }
+
+            #sidebar {
+                width: 180px !important;
+                min-width: 180px !important;
+                max-height: 100vh !important;
+                height: 100vh !important;
+                border-right: 1px solid #1e293b !important;
+                border-bottom: none !important;
+            }
+
+            #main-content {
+                height: 100vh !important;
+                width: calc(100% - 180px) !important;
+                flex-grow: 1;
+            }
+
+            #sidebar h2 {
+                font-size: 0.75rem;
+            }
+
+            #sidebar .group-title {
+                font-size: 0.55rem;
+            }
+
+            #sidebar select {
+                font-size: 0.65rem;
+                padding: 4px;
+            }
+
+            #sidebar label {
+                font-size: 0.55rem;
+            }
+
+            #sidebar .status-item {
+                font-size: 0.5rem;
+                padding: 2px;
+            }
+
+            #stats-box {
+                font-size: 0.55rem;
+                max-height: 60px;
+            }
         }
     </style>
 </head>
 
 <body>
+
+    <!-- ORIENTATION OVERLAY: Forces landscape on mobile -->
+    <div id="orientation-overlay">
+        <div class="rotate-icon">📱</div>
+        <div class="rotate-text">Rotate Your Device to Landscape</div>
+        <div class="rotate-sub">Charts are optimized for landscape viewing</div>
+    </div>
 
     <div id="sidebar">
         <h2>LOWER LIMB EXOSKELETON</h2>
@@ -286,6 +475,7 @@
 
     <div id="main-content">
         <button id="btn-maximize" onclick="toggleFullScreen()">⤢ Maximize</button>
+        <button id="btn-toggle-diagram" onclick="toggleMobileDiagram()">🧍 Show Diagram</button>
         <div id="plot-area"></div>
 
         <!-- SVG Diagram: Cyclogram (Hip + Knee angles) -->
@@ -434,61 +624,55 @@
         }
 
         // === DRAGGABLE DIAGRAM FUNCTIONALITY ===
+        // Uses top/left pixel positioning so mobile CSS scale(0.55) doesn't fight translate.
         function initDraggableDiagrams() {
             const diagrams = document.querySelectorAll('.diagram-box');
 
             diagrams.forEach(diagram => {
                 let isDragging = false;
-                let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+                let startMouseX, startMouseY, startLeft, startTop;
 
                 diagram.addEventListener('mousedown', dragStart);
-                diagram.addEventListener('touchstart', dragStart);
+                diagram.addEventListener('touchstart', dragStart, { passive: false });
 
                 document.addEventListener('mousemove', drag);
-                document.addEventListener('touchmove', drag);
+                document.addEventListener('touchmove', drag, { passive: false });
 
                 document.addEventListener('mouseup', dragEnd);
                 document.addEventListener('touchend', dragEnd);
 
-                function dragStart(e) {
-                    if (e.type === 'touchstart') {
-                        initialX = e.touches[0].clientX - xOffset;
-                        initialY = e.touches[0].clientY - yOffset;
-                    } else {
-                        initialX = e.clientX - xOffset;
-                        initialY = e.clientY - yOffset;
-                    }
+                function getClientXY(e) {
+                    return e.touches
+                        ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+                        : { x: e.clientX, y: e.clientY };
+                }
 
-                    if (e.target === diagram || diagram.contains(e.target)) {
-                        isDragging = true;
-                    }
+                function dragStart(e) {
+                    if (!(e.target === diagram || diagram.contains(e.target))) return;
+                    const { x, y } = getClientXY(e);
+                    startMouseX = x;
+                    startMouseY = y;
+                    // Read current top/left (px) from inline style or computed
+                    startLeft = parseInt(diagram.style.left) || diagram.offsetLeft;
+                    startTop  = parseInt(diagram.style.top)  || diagram.offsetTop;
+                    isDragging = true;
+                    e.preventDefault();
                 }
 
                 function drag(e) {
-                    if (isDragging) {
-                        e.preventDefault();
-
-                        if (e.type === 'touchmove') {
-                            currentX = e.touches[0].clientX - initialX;
-                            currentY = e.touches[0].clientY - initialY;
-                        } else {
-                            currentX = e.clientX - initialX;
-                            currentY = e.clientY - initialY;
-                        }
-
-                        xOffset = currentX;
-                        yOffset = currentY;
-
-                        setTranslate(currentX, currentY, diagram);
-                    }
+                    if (!isDragging) return;
+                    e.preventDefault();
+                    const { x, y } = getClientXY(e);
+                    const dx = x - startMouseX;
+                    const dy = y - startMouseY;
+                    diagram.style.left   = (startLeft + dx) + 'px';
+                    diagram.style.top    = (startTop  + dy) + 'px';
+                    diagram.style.right  = 'auto';
+                    diagram.style.bottom = 'auto';
                 }
 
                 function dragEnd() {
                     isDragging = false;
-                }
-
-                function setTranslate(xPos, yPos, el) {
-                    el.style.transform = `translate(${xPos}px, ${yPos}px)`;
                 }
             });
         }
@@ -497,16 +681,41 @@
         function updateDiagramVisibility(mode, sub) {
             const cyclogramDiagram = document.getElementById('diagram-cyclogram');
             const kneeCableDiagram = document.getElementById('diagram-knee-cable');
+            const toggleBtn = document.getElementById('btn-toggle-diagram');
 
             // Hide all first
             cyclogramDiagram.classList.remove('active');
             kneeCableDiagram.classList.remove('active');
 
+            let diagramNeeded = false;
+
             // Show based on mode
             if (mode == "3") { // Cyclogram
                 cyclogramDiagram.classList.add('active');
+                diagramNeeded = true;
             } else if (mode == "5" && sub && sub.includes("Knee-Cable")) { // Knee-Cable Relation
                 kneeCableDiagram.classList.add('active');
+                diagramNeeded = true;
+            }
+
+            // Mobile toggle button visibility
+            if (diagramNeeded) {
+                toggleBtn.classList.add('show-on-mobile');
+            } else {
+                toggleBtn.classList.remove('show-on-mobile');
+                document.body.classList.remove('mobile-diagram-visible');
+                toggleBtn.textContent = '🧍 Show Diagram';
+            }
+        }
+
+        // === MOBILE: TOGGLE DIAGRAM OVERLAY ===
+        function toggleMobileDiagram() {
+            const btn = document.getElementById('btn-toggle-diagram');
+            document.body.classList.toggle('mobile-diagram-visible');
+            if (document.body.classList.contains('mobile-diagram-visible')) {
+                btn.textContent = '✕ Hide Diagram';
+            } else {
+                btn.textContent = '🧍 Show Diagram';
             }
         }
 
@@ -629,7 +838,10 @@
             // --- STYLE SETTINGS FOR PPT/REPORT ---
             // Cek apakah mode fullscreen aktif
             const isMax = document.body.classList.contains('fullscreen-mode');
-            const s = isMax ? 2.5 : 1.0; // SCALE FACTOR: 2.5x jika Maximize (Jumbo Mode)
+            // Mobile detection: screen width <= 932px (matches our media queries)
+            const isMobile = window.innerWidth <= 932;
+            // SCALE FACTOR: 2.5x Maximize, 0.75x Mobile, 1.0x Desktop
+            const s = isMax ? 2.5 : (isMobile ? 0.75 : 1.0);
 
             const fontBase = { family: '-apple-system, Arial', size: 14 * s, color: '#000' };
             const fontTitle = { family: '-apple-system, Arial', size: 18 * s, color: '#000', weight: 'bold' };
@@ -641,9 +853,10 @@
 
             let layout = {
                 // Gunakan automargin agar tidak perlu menebak ukuran margin
-                // REVISI (User Request): Kurangi gap antara judul dan frame grafik
-                // Margin atas (t) dikembalikan ke ukuran normal-ish (120) karena 160 terlalu jauh
-                margin: { t: isMax ? 120 : 80, b: isMax ? 100 : 70, l: isMax ? 120 : 70, r: isMax ? 120 : 60 },
+                // Mobile: compact margins. Maximize: large. Desktop: normal.
+                margin: isMobile
+                    ? { t: 40, b: 40, l: 45, r: 40 }
+                    : { t: isMax ? 120 : 80, b: isMax ? 100 : 70, l: isMax ? 120 : 70, r: isMax ? 120 : 60 },
                 showlegend: true,
                 dragmode: 'pan',
                 legend: {
@@ -681,9 +894,9 @@
             let config = {
                 scrollZoom: true,
                 responsive: true,
-                displayModeBar: true,
+                displayModeBar: false,   // Hide floating Plotly toolbar for clean UI
                 displaylogo: false,
-                editable: true, // WAJIB TRUE AGAR BISA DRAG
+                editable: true,          // Keeps legend drag-able
                 edits: {
                     legendPosition: true,   // Allow legend to be dragged
                     legendText: false,      // Lock legend text editing
@@ -2109,6 +2322,21 @@
             }
             Plotly.newPlot('plot-area', dataPlot, layout, config);
         }
+        // === ORIENTATION CHANGE: Auto-resize Plotly chart ===
+        window.addEventListener('orientationchange', function () {
+            setTimeout(function () {
+                drawPlot();
+                Plotly.Plots.resize(document.getElementById('plot-area'));
+            }, 300);
+        });
+
+        // Also listen to resize for desktop browser testing
+        window.addEventListener('resize', function () {
+            clearTimeout(window._resizeTimer);
+            window._resizeTimer = setTimeout(function () {
+                Plotly.Plots.resize(document.getElementById('plot-area'));
+            }, 200);
+        });
     </script>
 </body>
 
